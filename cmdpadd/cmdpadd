@@ -51,10 +51,12 @@ class CPManager(dbus.service.Object):
 			self.__listeners.remove()
 	
 	def __add(self, dev):
+		print "Adding device:", dev
 		self.__devices[dev] = CommandPadDevice(self.__bus, dev, dev)
 		self.__devices[dev].open()
 	
 	def __remove(self, dev):
+		print "Removing device:", dev
 		self.__devices[dev].close()
 		del self.__devices[dev]
 	

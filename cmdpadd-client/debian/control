@@ -1,0 +1,13 @@
+Source: cmdpadd-client
+Section: universe/python
+Priority: optional
+Maintainer: James Bliss <james.bliss@astro73.com>
+Build-Depends: debhelper (>= 5), python-support (>= 0.3), docbook-xsl, xsltproc
+Standards-Version: 3.7.2
+
+Package: cmdpadd-client
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-dbus, cmdpadd
+Description: GNOME client for cmdpadd
+ A simple client for the Saitek command pad daemon, cmdpadd.
+XS-Python-Version: ${python:Versions} 

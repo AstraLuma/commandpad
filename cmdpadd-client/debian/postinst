@@ -1,0 +1,5 @@
+#!/bin/sh
+#Ironically, we're using sysv here.
+invoke-rc.d dbus reload
+
+#DEBHELPER#
