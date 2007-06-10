@@ -1,0 +1,11 @@
+Document: cmdpadd
+Title: Debian cmdpadd Manual
+Author: James Bliss
+Abstract: This manual describes what cmdpadd is
+ and how it can be used to
+ manage online manuals on Debian systems.
+Section: unknown
+
+Format: debiandoc-sgml
+Files: /usr/share/doc/cmdpadd/cmdpadd.sgml.gz
+

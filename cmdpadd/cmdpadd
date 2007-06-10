@@ -1,0 +1,158 @@
+#!/usr/bin/python -O
+# -*- encoding: utf-8 -*-
+#  This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License with
+# the Debian GNU/Linux distribution in file /usr/share/common-licenses/GPL;
+# if not, write to the Free Software Foundation, Inc.,  51 Franklin St, 
+# Fifth Floor, Boston, MA  02111-1307  USA
+"""
+The command pad daemon
+"""
+from __future__ import with_statement
+import sys, os, time
+from commandpad.device import *
+import dbus.service, dbus.mainloop.glib, gobject
+from dbus.mainloop.glib import DBusGMainLoop
+from threading import Thread
+from commandpad import findpads
+
+gobject.threads_init()
+dbus.mainloop.glib.threads_init()
+CONF_FILES = '/etc/commandpadd.conf', './commandpadd.conf'
+WELL_KNOWN_NAME = 'com.astro73.saitek.CommandPad'
+
+class CPManager(dbus.service.Object):
+	"""
+	Manages devices.
+	"""
+	__devices = {}
+	__bus = None
+	__listeners = ()
+	def __init__(self, bus, path):
+		super(CPManager, self).__init__(bus, path)
+		self.__bus = bus
+		self.__devices = {}
+		self.__listeners = findpads.registerAddHandler(self.__add), findpads.registerRemoveHandler(self.__remove)
+		
+		for dev in findpads.getEventFiles():
+			self.__add(dev)
+	
+	def __del__(self):
+		super(CommandPadDevice, self).__del__()
+		for l in self.__listeners:
+			self.__listeners.remove()
+	
+	def __add(self, dev):
+		self.__devices[dev] = CommandPadDevice(self.__bus, dev, dev)
+		self.__devices[dev].open()
+	
+	def __remove(self, dev):
+		self.__devices[dev].close()
+		del self.__devices[dev]
+	
+	@dbus.service.method(dbus_interface='com.astro73.saitek.CPManager',out_signature='ao')
+	def Devices(self):
+		return self.__devices.values()
+
+chkbtn = lambda b: 0 <= b <= 11
+chkmd = lambda m: (m & ~0x3) == 0
+class CommandPadDevice(dbus.service.Object):
+	"""
+	The device that raises the signals
+	"""
+	__dev = None
+	Device = property((lambda s: s.__dev), doc="""The device we're listening to.""")
+	__cp = None
+	__finish = False
+	__thread = None
+	def __init__(self, bus, path, evdev):
+		super(CommandPadDevice, self).__init__(bus, path)
+		self.__dev = os.path.abspath(evdev)
+		self.__cp = CommandPad(self.__dev)
+		self.__thread = Thread(target=self.threaded, name="CommandPadReader")
+		self.__thread.setDaemon(True)
+	
+	@dbus.service.method(dbus_interface='com.astro73.saitek.CommandPad',out_signature='y')
+	def getMode(self):
+		"""
+		Gets the current mode. Note that this should be considered informational;
+		no synchronization is performed.
+		"""
+		return self.__cp.mode
+	
+	@dbus.service.method(dbus_interface='com.astro73.saitek.CommandPad',out_signature='s')
+	def getDevice(self):
+		"""
+		Gets the device that is listened to.
+		"""
+		return self.__dev
+	
+	@dbus.service.signal(dbus_interface='com.astro73.saitek.CommandPad',signature='yy')
+	def ButtonDown(self, button, mode):
+#		print "ButtonDown", button, mode
+		if not (chkbtn(button) and chkmd(mode)):
+			raise ValueError
+
+	@dbus.service.signal(dbus_interface='com.astro73.saitek.CommandPad',signature='yy')
+	def ButtonUp(self, button, mode):
+#		print "ButtonUp", button, mode
+		if not (chkbtn(button) and chkmd(mode)):
+			raise ValueError
+
+	@dbus.service.signal(dbus_interface='com.astro73.saitek.CommandPad',signature='yy')
+	def ModeChange(self, oldmode, newmode):
+#		print "ModeChange", oldmode, newmode
+		if not (chkmd(oldmode) and chkmd(newmode)):
+			raise ValueError
+	
+	def threaded(self):
+		self.__finish = False
+		print "Start loop"
+		dev = self.__cp
+		while not self.__finish:
+			om = dev.mode
+			ev = dev.readEvent() # Uses blocking IO
+			nm = dev.mode
+			if self.__finish: 
+				break
+			if om != nm:
+				self.ModeChange(om, nm)
+			if ev.pushed:
+				self.ButtonDown(ev.button, ev.mode)
+			else:
+				self.ButtonUp(ev.button, ev.mode)
+	
+	def open(self):
+		self.__thread.start()
+		time.sleep(0.2)
+	
+	def close(self):
+		self.__finish = True
+
+# Initialize
+DBusGMainLoop(set_as_default=True)
+MainLoop = gobject.MainLoop()
+findpads.init()
+bus = dbus.SystemBus()
+wkn = dbus.service.BusName(WELL_KNOWN_NAME, bus)
+Manager = CPManager(bus, "/com/astro73/saitek/CPManager")
+
+
+# Start the daemon
+try:
+	try:
+		MainLoop.run()
+	except KeyboardInterrupt: pass
+finally:
+	del wkn
+	del Manager
+	sys.stdout.flush()
+

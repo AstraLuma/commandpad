@@ -1,0 +1,16 @@
+Source: cmdpadd
+Section: universe/python
+Priority: optional
+Maintainer: James Bliss <james.bliss@astro73.com>
+Build-Depends: debhelper (>= 5), python-support (>= 0.3), docbook-xsl, xsltproc, dh-installupstart
+Standards-Version: 3.7.2
+
+Package: cmdpadd
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-dbus, hal
+Recommends: cmdpadd-client, upstart
+Description: Daemon to handle the Saitek gamer's keyboard command pad
+ A daemon to read the command pad and issue events to clients. Provides
+ little else beyond that. You probably want to install cmdpadd-client 
+ (or similar) for functionality.
+XS-Python-Version: ${python:Versions} 

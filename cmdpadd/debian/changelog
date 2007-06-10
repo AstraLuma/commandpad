@@ -1,0 +1,36 @@
+cmdpadd (0.2.2) feisty; urgency=low
+
+  * New versioning scheme so I don't have to make orig tarballs 
+
+ -- James Bliss <james.bliss@astro73.com>  Sat, 26 May 2007 02:14:11 -0400
+
+cmdpadd (0.0.2-2) feisty; urgency=low
+
+  * Put cpd-test directly into the commandpad.client module
+  * Created the commandpad module (may go into a commandpad-common package someday)
+  * Reload DBus on installation
+
+ -- James Bliss <james.bliss@astro73.com>  Sat, 26 May 2007 00:00:25 -0400
+
+cmdpadd (0.0.2-1) feisty; urgency=low
+
+  * Added support for upstart
+  * Removed conf file, now auto-configures at run time
+  * Added multi-pad support
+  * Uses HAL for configuration info
+  * Other goodies I've forgotton
+
+ -- James Bliss <james.bliss@astro73.com>  Fri, 25 May 2007 22:23:58 -0400
+
+cmdpadd (0.0.1-1) feisty; urgency=low
+
+  * Minor revisions, deb packaging 
+
+ -- James Bliss <james.bliss@astro73.com>  Fri, 25 May 2007 17:09:53 -0400
+
+cmdpadd (0.0.1-1) unstable; urgency=low
+
+  * Initial release
+
+ -- James Bliss <james.bliss@astro73.com>  Fri, 25 May 2007 14:01:01 -0400
+
