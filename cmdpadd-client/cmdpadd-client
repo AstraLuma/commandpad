@@ -5,6 +5,64 @@ pygtk.require('2.0')
 import gtk
 import time
 import os
-from egg.trayicon import TrayIcon
 import sys
+import commandpad.client as cpc
 
+class CmdPadClient(object):
+	def __init__(self):
+		# Initialize the Command Pad client
+		self.client = cpc.CommandPadListener(self.cp_up, self.cp_down, self.cp_mode)
+		# Initialize the tray icon
+		self.tray = gtk.status_icon_new_from_icon_name('keyboard')
+		self.tray.connect("activate", self.tray_activate)
+		self.tray.connect("popup_menu", self.tray_menu)
+		# Show the tray icon
+		self.tray.set_visible(True)
+	
+	def tray_activate(self,status_icon):
+		print "tray_activate:",status_icon
+	def tray_menu(self,status_icon, button, activate_time):
+		print "tray_menu:",status_icon, button, activate_time
+		pu = PopupMenu(self)
+		pu.popup(button, activate_time)
+	
+	def cp_down(self, path, button, mode):
+		print "cp_down:", path, int(button), int(mode)
+	def cp_up(self, path, button, mode):
+		print "cp_up:", path, int(button), int(mode)
+	def cp_mode(self, path, old, new):
+		print "cp_mode:", path, int(old), int(new)
+	
+	def main(self):
+		gtk.main()
+	
+	def exit(self, event):
+		gtk.main_quit(0)
+	
+	def update_config(self, event):
+		print "TODO: Configuration dialog"
+
+class PopupMenu(object):
+	def __init__(self, client):
+		# Create menu items
+		self.item_conf  = gtk.MenuItem( "Configure...", gtk.TRUE)
+		self.item_exit = gtk.MenuItem( "Exit", gtk.TRUE)
+		# Connect the events
+		self.item_conf.connect( 'activate', client.update_config)
+		self.item_exit.connect( 'activate', client.exit)
+		# Create the menu
+		self.menu = gtk.Menu()
+		# Append menu items to the menu
+		self.menu.append( self.item_conf)
+		self.menu.append( gtk.SeparatorMenuItem())
+		self.menu.append( self.item_exit)
+		self.menu.show_all()
+
+	def popup(self, button, activate_time):
+		# Display the menu
+		self.menu.popup( None, None, None, button, activate_time)
+		return
+
+if __name__ == "__main__":
+	client = CmdPadClient()
+	client.main()
