@@ -2,7 +2,7 @@
 BIN     = $(DESTDIR)/usr/bin
 CONF    = $(DESTDIR)/etc
 MAN     = $(DESTDIR)/usr/share/man
-DOC     = $(DESTDIR)/usr/share/doc/cmdpadd
+DOC     = $(DESTDIR)/usr/share/doc/cmdpadd-client
 
 PROGRAM=cmdpadd-client
 
@@ -14,15 +14,15 @@ $(PROGRAM)-target: $(PROGRAM)
 
 install : $(PROGRAM)-target
 	install -d $(BIN) $(MAN)/man1 $(DOC)
-	install ./cmdpadd-client $(BIN)
+	install ./$(PROGRAM) $(BIN)
 	install -m644 $(PROGRAM).1 $(MAN)/man1
 	gzip debian/$(PROGRAM).sgml -c > $(DOC)/$(PROGRAM).sgml.gz
 
 clean: 
 	rm -f $(PROGRAM).tar.gz
 
-cmdpadd.tar.gz : $(MODULES) $(DAEMON) $(TEST) $(DAEMON_CONF) Makefile $(DAEMON).1 debian/*
-	-@rm -rf debian/$(DAEMON)
+cmdpadd.tar.gz : $(MODULES) $(PROGRAM) $(TEST) Makefile $(PROGRAM).1 debian/*
+	-@rm -rf debian/$(PROGRAM)
 	tar -czf $@ $^
 
 deb:

@@ -52,18 +52,21 @@ class CPManager(dbus.service.Object):
 	
 	@dbus.service.signal(dbus_interface='com.astro73.saitek.CPManager',signature='s')
 	def addDevice(self, dev):
+		dev = str(dev)
 		print "Adding device:", dev
 		self.__devices[dev] = CommandPadDevice(self.__bus, dev, dev)
 		self.__devices[dev].open()
 	
 	@dbus.service.signal(dbus_interface='com.astro73.saitek.CPManager',signature='s')
 	def removeDevice(self, dev):
+		dev = str(dev)
 		print "Removing device:", dev
 		self.__devices[dev].close()
 		del self.__devices[dev]
 	
 	@dbus.service.method(dbus_interface='com.astro73.saitek.CPManager',out_signature='ao')
 	def Devices(self):
+#		print map((lambda o: o.__dbus_object_path__), self.__devices.values())
 		return self.__devices.values()
 
 chkbtn = lambda b: 0 <= b <= 11

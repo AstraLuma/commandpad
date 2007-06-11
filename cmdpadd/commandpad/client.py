@@ -102,6 +102,8 @@ class CPManagerListener(object):
 		Note that as soon as Remove() returns, the CommandPadListener is 
 		destroyed.
 		"""
+		self.__add = add
+		self.__remove = remove
 		self.__listeners = {}
 		self.__mainloop = mainloop
 		if mainloop is None:
@@ -109,9 +111,10 @@ class CPManagerListener(object):
 		else:
 			self.__bus = dbus.SystemBus(mainloop=mainloop)
 		self.__receiver = self.__bus.add_signal_receiver(self.__signal, 
-		       None, None, 'com.astro73.saitek.CPManager', None,
+		       None, 'com.astro73.saitek.CPManager', 'com.astro73.saitek.CommandPad', None,
 		       member_keyword='member', path_keyword='path')
 		self.__object = self.__bus.get_object('com.astro73.saitek.CommandPad', "/com/astro73/saitek/CPManager")
+		self.Devices()
 	
 	def close(self):
 		if self.__listeners is not None:
@@ -133,13 +136,13 @@ class CPManagerListener(object):
 		self.close()
 	
 	def __signal(self, dev, member, path):
-		if member == 'addDevice' and callable(self.Add):
+		if member == 'addDevice':
 			if dev not in self.__listeners:
 				self.__listeners[dev] = CommandPadListener(device=dev, mainloop=self.__mainloop)
-			self.Add(self, self.__listeners[dev])
-		elif member == 'removeDevice' and callable(self.Remove):
+			if callable(self.Add): self.Add(self, self.__listeners[dev])
+		elif member == 'removeDevice':
 			l = self.__listeners.pop(dev)
-			self.Remove(self, l)
+			if callable(self.Remove): self.Remove(self, l)
 			l.close()
 	
 	def Devices(self):
@@ -152,12 +155,12 @@ class CPManagerListener(object):
 		for d in self.__listeners.keys():
 			if d not in devs:
 				l = self.__listeners.pop(dev)
-				self.Remove(self, l)
+				if callable(self.Remove): self.Remove(self, l)
 				l.close()
 		for dev in devs:
 			if dev not in self.__listeners:
 				self.__listeners[dev] = CommandPadListener(device=dev, mainloop=self.__mainloop)
-				self.Add(self, self.__listeners[dev])
+				if callable(self.Add): self.Add(self, self.__listeners[dev])
 			rv.append(self.__listeners[dev])
 		return rv
 
@@ -211,7 +214,7 @@ class CommandPadListener(object):
 		else:
 			self.__bus = dbus.SystemBus(mainloop=mainloop)
 		self.__receiver = self.__bus.add_signal_receiver(self.__signal, 
-		       None, None, 'com.astro73.saitek.CommandPad', self.__device,
+		       None, 'com.astro73.saitek.CommandPad', 'com.astro73.saitek.CommandPad', self.__device,
 		       member_keyword='member', path_keyword='path')
 		if self.__device:
 			self.__object = self.__bus.get_object('com.astro73.saitek.CommandPad', self.__device)

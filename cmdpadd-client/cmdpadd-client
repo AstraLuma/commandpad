@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -O
 # -*- coding: utf-8 -*-
 import pygtk
 pygtk.require('2.0')
@@ -11,6 +11,7 @@ import commandpad.client as cpc
 
 class CmdPadClient(object):
 	def __init__(self, listener):
+		print "CmdPadClient:", listener
 		# Initialize the Command Pad client
 		self.client = listener
 		self.client.ButtonUp = self.cp_up
@@ -34,7 +35,7 @@ class CmdPadClient(object):
 	def tray_menu(self,status_icon, button, activate_time):
 		print "tray_menu:",status_icon, button, activate_time
 		pu = PopupMenu(self)
-		pu.popup(button, activate_time)
+		pu.popup(status_icon, button, activate_time)
 	
 	def cp_down(self, path, button, mode):
 		button, mode = int(button), int(mode)
@@ -72,9 +73,9 @@ class PopupMenu(object):
 		self.menu.append( self.item_exit)
 		self.menu.show_all()
 
-	def popup(self, button, activate_time):
+	def popup(self, icon, button, activate_time):
 		# Display the menu
-		self.menu.popup( None, None, None, button, activate_time)
+		self.menu.popup( None, None, gtk.status_icon_position_menu, button, activate_time, icon)
 		return
 
 Clients = {}
