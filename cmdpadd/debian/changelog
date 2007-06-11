@@ -1,3 +1,10 @@
+cmdpadd (0.2.3) feisty; urgency=low
+
+  * Brought multi-device support to commandpad.client in full-force
+  * Added the DBus methods to commandpad.client
+
+ -- James Bliss <james.bliss@astro73.com>  Sat, 26 May 2007 02:14:11 -0400
+
 cmdpadd (0.2.2) feisty; urgency=low
 
   * New versioning scheme so I don't have to make orig tarballs 

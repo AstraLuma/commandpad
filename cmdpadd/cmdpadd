@@ -40,22 +40,24 @@ class CPManager(dbus.service.Object):
 		super(CPManager, self).__init__(bus, path)
 		self.__bus = bus
 		self.__devices = {}
-		self.__listeners = findpads.registerAddHandler(self.__add), findpads.registerRemoveHandler(self.__remove)
+		self.__listeners = findpads.registerAddHandler(self.addDevice), findpads.registerRemoveHandler(self.removeDevice)
 		
 		for dev in findpads.getEventFiles():
-			self.__add(dev)
+			self.addDevice(dev)
 	
 	def __del__(self):
 		super(CommandPadDevice, self).__del__()
 		for l in self.__listeners:
 			self.__listeners.remove()
 	
-	def __add(self, dev):
+	@dbus.service.signal(dbus_interface='com.astro73.saitek.CPManager',signature='s')
+	def addDevice(self, dev):
 		print "Adding device:", dev
 		self.__devices[dev] = CommandPadDevice(self.__bus, dev, dev)
 		self.__devices[dev].open()
 	
-	def __remove(self, dev):
+	@dbus.service.signal(dbus_interface='com.astro73.saitek.CPManager',signature='s')
+	def removeDevice(self, dev):
 		print "Removing device:", dev
 		self.__devices[dev].close()
 		del self.__devices[dev]
