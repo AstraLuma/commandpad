@@ -6,18 +6,28 @@ import gtk
 import time
 import os
 import sys
+import dbus
 import commandpad.client as cpc
 
 class CmdPadClient(object):
-	def __init__(self):
+	def __init__(self, listener):
 		# Initialize the Command Pad client
-		self.client = cpc.CommandPadListener(self.cp_up, self.cp_down, self.cp_mode)
+		self.client = listener
+		self.client.ButtonUp = self.cp_up
+		self.client.ButtonDown = self.cp_down
+		self.client.ModeChange = self.cp_mode
+		
 		# Initialize the tray icon
 		self.tray = gtk.status_icon_new_from_icon_name('keyboard')
 		self.tray.connect("activate", self.tray_activate)
 		self.tray.connect("popup_menu", self.tray_menu)
 		# Show the tray icon
 		self.tray.set_visible(True)
+	
+	def close(self):
+		self.tray = None
+		self.client.close()
+		self.client = None
 	
 	def tray_activate(self,status_icon):
 		print "tray_activate:",status_icon
@@ -27,19 +37,23 @@ class CmdPadClient(object):
 		pu.popup(button, activate_time)
 	
 	def cp_down(self, path, button, mode):
-		print "cp_down:", path, int(button), int(mode)
+		button, mode = int(button), int(mode)
+		print "cp_down:", path, button, mode
 	def cp_up(self, path, button, mode):
-		print "cp_up:", path, int(button), int(mode)
+		button, mode = int(button), int(mode)
+		print "cp_up:", path, button, mode
 	def cp_mode(self, path, old, new):
-		print "cp_mode:", path, int(old), int(new)
+		old, new = int(old), int(new)
+		print "cp_mode:", path, old, new
 	
-	def main(self):
+	@staticmethod
+	def main():
 		gtk.main()
 	
-	def exit(self, event):
+	def exit(self, event=None):
 		gtk.main_quit(0)
 	
-	def update_config(self, event):
+	def update_config(self, event=None):
 		print "TODO: Configuration dialog"
 
 class PopupMenu(object):
@@ -63,6 +77,21 @@ class PopupMenu(object):
 		self.menu.popup( None, None, None, button, activate_time)
 		return
 
+Clients = {}
+def AddDevice(mgr, listener):
+	dev = listener.Device
+	print "AddDevice:", dev
+	if dev not in Clients:
+		Clients[dev] = CmdPadClient(listener)
+
+def RemoveDevice(mgr, listener):
+	dev = listener.Device
+	print "RemoveDevice:", dev
+	if dev not in Clients: return
+	Clients[dev].close()
+	del Clients[dev]
+
 if __name__ == "__main__":
-	client = CmdPadClient()
-	client.main()
+	manager = cpc.CPManagerListener(AddDevice, RemoveDevice)
+	manager.Devices()
+	CmdPadClient.main()
