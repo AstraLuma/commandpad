@@ -189,7 +189,7 @@ class CommandPadListener(object):
 	__bus = None
 	__receiver = None
 	__device = None
-	self.__object = None
+	__object = None
 	def __init__(self, up=None, down=None, mode=None, device=None, mainloop=None):
 		"""CommandPadListener(up=None, down=None, mode=None, device=None, mainloop=None) -> CommandPadListener
 		Creates a CommandPadListener.
