@@ -22,7 +22,7 @@ import struct, time
 __all__ = 'DevEvent', 'Device', 'CPEvent', 'CommandPad', 'BUTTON_1', \
           'BUTTON_2', 'BUTTON_3', 'BUTTON_4', 'BUTTON_5', 'BUTTON_6', \
           'BUTTON_7', 'BUTTON_8', 'BUTTON_9', 'BUTTON_A', 'BUTTON_B', \
-          'buttonName', 'modeName', 'MODE_A', 'MODE_B'
+          'buttonName', 'modeName', 'MODE_A', 'MODE_B', 'MODES'
 
 # typedef long time_t, suseconds_t; // 4B
 # struct input_event {
@@ -129,6 +129,7 @@ BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4, BUTTON_5, BUTTON_6, BUTTON_7, BUTTON_8, 
           BUTTON_9, BUTTON_A, BUTTON_B = range(11)
 MODE_A = 0x1
 MODE_B = 0x2
+MODES = frozenset([0, MODE_A, MODE_B, MODE_A|MODE_B])
 
 def modeName(mode):
 	return ("A" if mode & 0x1 else "") + ("B" if mode & 0x2 else "")
