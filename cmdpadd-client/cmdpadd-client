@@ -8,6 +8,7 @@ import os
 import sys
 import dbus
 import commandpad.client as cpc
+import cmdpad_client
 
 class CmdPadClient(object):
 	def __init__(self, listener):
@@ -55,13 +56,13 @@ class CmdPadClient(object):
 		gtk.main_quit(0)
 	
 	def update_config(self, event=None):
-		print "TODO: Configuration dialog"
+		cmdpad_client.config.ConfigDialog().run()
 
 class PopupMenu(object):
 	def __init__(self, client):
 		# Create menu items
-		self.item_conf  = gtk.MenuItem( "Configure...", gtk.TRUE)
-		self.item_exit = gtk.MenuItem( "Exit", gtk.TRUE)
+		self.item_conf  = gtk.MenuItem( "Configure...", True)
+		self.item_exit = gtk.MenuItem( "Exit", True)
 		# Connect the events
 		self.item_conf.connect( 'activate', client.update_config)
 		self.item_exit.connect( 'activate', client.exit)
@@ -76,7 +77,6 @@ class PopupMenu(object):
 	def popup(self, icon, button, activate_time):
 		# Display the menu
 		self.menu.popup( None, None, gtk.status_icon_position_menu, button, activate_time, icon)
-		return
 
 Clients = {}
 def AddDevice(mgr, listener):
