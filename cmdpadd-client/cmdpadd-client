@@ -61,8 +61,8 @@ class CmdPadClient(object):
 class PopupMenu(object):
 	def __init__(self, client):
 		# Create menu items
-		self.item_conf  = gtk.MenuItem( "Configure...", True)
-		self.item_exit = gtk.MenuItem( "Exit", True)
+		self.item_conf  = gtk.ImageMenuItem( gtk.STOCK_PREFERENCES)
+		self.item_exit = gtk.ImageMenuItem( gtk.STOCK_QUIT)
 		# Connect the events
 		self.item_conf.connect( 'activate', client.update_config)
 		self.item_exit.connect( 'activate', client.exit)

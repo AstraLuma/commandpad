@@ -11,16 +11,47 @@ from commandpad.client import BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4, BUTTON_5, 
 class ConfigDialog(object):
 	__xml = None
 	__dialog = None
+	__mode = 0
+	__button = BUTTON_1
+	MODES = [u'0', u'A', u'B', u'AB']
+	__modes = []
+	__buttons = []
 	def __init__(self):
 		self.__xml = glade.XML(resource('config.glade'))
 		self.__xml.signal_autoconnect(self)
 		self.__dialog = self.__xml.get_widget('gdConfig')
+		self.__dialog
+		self.__buttons = [self.__xml.get_widget('b%i'%(btn+1)) for btn in range(BUTTON_1, BUTTON_9+1)]
+		self.__modes = [None, self.__xml.get_widget('tbModeA'), self.__xml.get_widget('tbModeB')]
+		self.__update(True)
+	
+	def __name(self):
+		FORMAT = u"%(num)i (%(mode)s)"
+		mode = self.MODES[self.__mode]
+		return FORMAT % {'mode': mode, 'num': self.__button + 1}
+	
+	def __update(self, first=False):
+		if not first:
+			# save the current data
+			pass
+		self.__xml.get_widget('lbldButton').set_label(self.__name())
+		if bool(self.__mode & MODE_A) != bool(self.__modes[MODE_A].get_active()):
+			self.__modes[MODE_A].set_active(bool(num & MODE_A))
+		if bool(self.__mode & MODE_B) != bool(self.__modes[MODE_B].get_active()):
+			self.__modes[MODE_B].set_active(bool(self.__mode & MODE_B))
 	
 	def buttonChange(self, widget, data=None):
-		print "buttonChange", widget, data
+		num = self.__buttons.index(widget)
+		print "buttonChange", widget, num
+		if num != self.__button:
+			self.__button = num
+			self.__update()
 	
 	def modeChange(self, widget, data=None):
-		print "modeChange", widget, data
+		num = self.__modes.index(widget)
+		print "modeChange", widget, num
+		self.__mode = (self.__mode & ~num) | (num if widget.get_active() else 0)
+		self.__update()
 	
 	def __del__(self):
 		self.__dialog.destroy()
