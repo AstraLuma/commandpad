@@ -4,9 +4,26 @@ Handles the configuration dialog.
 from __future__ import absolute_import
 import gtk.glade as glade
 from .utils import resource, iterable
+from .actions import actionObjs, Action
 from commandpad.client import BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4, BUTTON_5, \
                        BUTTON_6, BUTTON_7, BUTTON_8, BUTTON_9, BUTTON_A, \
                        BUTTON_B, MODE_A, MODE_B, MODES
+import gobject, gtk
+
+
+## http://faq.pygtk.org/index.py?req=show&file=faq16.008.htp
+def set_model_from_list(cb, items):
+	"""Setup a ComboBox or ComboBoxEntry based on a list of strings."""           
+	model = gtk.ListStore(str)
+	for i in items:
+		model.append([i])
+	cb.set_model(model)
+	if type(cb) == gtk.ComboBoxEntry:
+		cb.set_text_column(0)
+	elif type(cb) == gtk.ComboBox:
+		cell = gtk.CellRendererText()
+		cb.pack_start(cell, True)
+		cb.add_attribute(cell, 'text', 0)
 
 class ConfigDialog(object):
 	__xml = None
@@ -16,13 +33,19 @@ class ConfigDialog(object):
 	MODES = [u'0', u'A', u'B', u'AB']
 	__modes = []
 	__buttons = []
-	def __init__(self):
+	__actions = []
+	__cbAct = None
+	def __init__(self, config):
+		self.__conf = config
 		self.__xml = glade.XML(resource('config.glade'))
 		self.__xml.signal_autoconnect(self)
 		self.__dialog = self.__xml.get_widget('gdConfig')
-		self.__dialog
 		self.__buttons = [self.__xml.get_widget('b%i'%(btn+1)) for btn in range(BUTTON_1, BUTTON_9+1)]
 		self.__modes = [None, self.__xml.get_widget('tbModeA'), self.__xml.get_widget('tbModeB')]
+		self.__actions = sorted(list(actionObjs()), (lambda a,b: cmp(a.label, b.label)))
+		self.__cbAct = self.__xml.get_widget('cbAction')
+		set_model_from_list(self.__cbAct, map((lambda a: a.label), self.__actions))
+		
 		self.__update(True)
 	
 	def __name(self):
@@ -30,19 +53,27 @@ class ConfigDialog(object):
 		mode = self.MODES[self.__mode]
 		return FORMAT % {'mode': mode, 'num': self.__button + 1}
 	
+	def __set_action(self, action):
+		print self.__actions, action
+		i = self.__actions.index(action)
+		self.__cbAct.set_active(i)
+	
+	def __save(self):
+		print "FIXME: Implement saving"
+	
 	def __update(self, first=False):
-		if not first:
-			# save the current data
-			pass
 		self.__xml.get_widget('lbldButton').set_label(self.__name())
 		if bool(self.__mode & MODE_A) != bool(self.__modes[MODE_A].get_active()):
 			self.__modes[MODE_A].set_active(bool(num & MODE_A))
 		if bool(self.__mode & MODE_B) != bool(self.__modes[MODE_B].get_active()):
 			self.__modes[MODE_B].set_active(bool(self.__mode & MODE_B))
+		conf = self.__conf[self.__mode, self.__button]
+		self.__set_action(conf[1] or Action())
 	
 	def buttonChange(self, widget, data=None):
 		num = self.__buttons.index(widget)
 		print "buttonChange", widget, num
+		self.__save()
 		if num != self.__button:
 			self.__button = num
 			self.__update()
@@ -50,8 +81,14 @@ class ConfigDialog(object):
 	def modeChange(self, widget, data=None):
 		num = self.__modes.index(widget)
 		print "modeChange", widget, num
+		self.__save()
 		self.__mode = (self.__mode & ~num) | (num if widget.get_active() else 0)
 		self.__update()
+	
+	def actionChange(self, widget, data=None):
+		print "actionChange", widget, data
+		#FIXME: Update config list
+		self.__save()
 	
 	def __del__(self):
 		self.__dialog.destroy()
@@ -59,6 +96,7 @@ class ConfigDialog(object):
 	def run(self):
 		rv = self.__dialog.run()
 		self.__dialog.hide()
+		return rv
 
 class Config(object):
 	"""
@@ -79,9 +117,7 @@ class Config(object):
 	   mode.
 	
 	The values returned are always iterables of the form:
-	   [ (MODE, BUTTON), str(ACTION), dict(OPTIONS) ]
-	Converting ACTION and OPTIONS to something useful is the responsibility
-	of another module.
+	   [ (MODE, BUTTON), actions.Action(ACTION), dict(OPTIONS) ]
 	"""
 	def __init__(self):
 		self.data = [ [(None, None) for i in range(9)] for i in MODES ]

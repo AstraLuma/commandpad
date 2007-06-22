@@ -1,5 +1,7 @@
 """
 Provides some GUI-related items for cmdpadd-client
 """
-import utils, config
+import utils
+import config
+import actions
 

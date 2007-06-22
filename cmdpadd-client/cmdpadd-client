@@ -8,11 +8,13 @@ import os
 import sys
 import dbus
 import commandpad.client as cpc
-import cmdpad_client
+import cmdpad_client as cp_c
 
 class CmdPadClient(object):
 	def __init__(self, listener):
 		print "CmdPadClient:", listener
+		self.conf = cp_c.config.Config()
+		#FIXME: Actually load something
 		# Initialize the Command Pad client
 		self.client = listener
 		self.client.ButtonUp = self.cp_up
@@ -56,7 +58,7 @@ class CmdPadClient(object):
 		gtk.main_quit(0)
 	
 	def update_config(self, event=None):
-		cmdpad_client.config.ConfigDialog().run()
+		cp_c.config.ConfigDialog(self.conf).run()
 
 class PopupMenu(object):
 	def __init__(self, client):
