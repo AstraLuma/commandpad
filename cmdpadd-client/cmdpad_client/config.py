@@ -54,6 +54,7 @@ class ConfigDialog(object):
 		set_model_from_list(self.__cbAct, map((lambda a: a.label), self.__actions))
 		self.__vbActConfig = self.__xml.get_widget('vbActConfig')
 		self.__ulock = Lock()
+		self.__set_action(self.__conf[self.__mode, self.__button][0])
 		self.__update(True)
 	
 	def __name(self):

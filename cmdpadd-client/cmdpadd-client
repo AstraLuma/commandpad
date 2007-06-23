@@ -79,6 +79,7 @@ class CmdPadClient(object):
 			self.cd = cp_c.config.ConfigDialog(self.conf)
 			self.cd.run()
 			self.cd = None
+			self.conf.writeFile(self.cfn)
 
 class PopupMenu(object):
 	def __init__(self, client):

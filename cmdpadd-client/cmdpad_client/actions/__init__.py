@@ -27,11 +27,11 @@ class Action(object):
 			name = __name__ + '.null'
 		m = __import__(name)
 		for bit in name.split('.')[1:]: # skip the first module
-			print "m,n,b", m, name, bit
-			print "props", dir(m)
+#			print "m,n,b", m, name, bit
+#			print "props", dir(m)
 			m = getattr(m, bit)
 		self.__mod = m
-		print "mod", name, dir(self.__mod)
+#		print "mod", name, dir(self.__mod)
 	
 	def run(self, conf):
 		self.__mod.run(conf)
