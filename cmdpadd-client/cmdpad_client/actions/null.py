@@ -2,7 +2,7 @@
 The do-nothing action.
 """
 
-__label__ = 'nothing'
+__label__ = 'Nothing'
 __config__ = ()
 
 def run(options):

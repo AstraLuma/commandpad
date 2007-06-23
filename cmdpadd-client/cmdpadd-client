@@ -11,6 +11,7 @@ import commandpad.client as cpc
 import cmdpad_client as cp_c
 
 class CmdPadClient(object):
+	cd = None
 	def __init__(self, listener):
 		print "CmdPadClient:", listener
 		self.conf = cp_c.config.Config()
@@ -58,7 +59,12 @@ class CmdPadClient(object):
 		gtk.main_quit(0)
 	
 	def update_config(self, event=None):
-		cp_c.config.ConfigDialog(self.conf).run()
+		if self.cd:
+			self.cd.grab()
+		else:
+			self.cd = cp_c.config.ConfigDialog(self.conf)
+			self.cd.run()
+			self.cd = None
 
 class PopupMenu(object):
 	def __init__(self, client):
