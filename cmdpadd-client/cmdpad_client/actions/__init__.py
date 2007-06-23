@@ -44,4 +44,7 @@ class Action(object):
 	
 	def __repr__(self):
 		return "%s(%r)" % (type(self).__name__, self.__mod.__name__)
+	
+	def __str__(self):
+		return self.__mod.__name__
 

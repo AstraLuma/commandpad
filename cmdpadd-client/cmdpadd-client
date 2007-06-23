@@ -10,12 +10,21 @@ import dbus
 import commandpad.client as cpc
 import cmdpad_client as cp_c
 
+CONF_DIR = os.path.expanduser("~/.cmdpadd/client")
+
 class CmdPadClient(object):
 	cd = None
+	cfn = ""
 	def __init__(self, listener):
 		print "CmdPadClient:", listener
 		self.conf = cp_c.config.Config()
-		#FIXME: Actually load something
+		
+		if not os.path.exists(CONF_DIR):
+			os.makedirs(CONF_DIR)
+		self.cfn = os.path.join(CONF_DIR, listener.Device.replace("/", "_"))
+		if os.path.exists(self.cfn):
+			self.conf.readFile(self.cfn)
+		
 		# Initialize the Command Pad client
 		self.client = listener
 		self.client.ButtonUp = self.cp_up
@@ -30,6 +39,7 @@ class CmdPadClient(object):
 		self.tray.set_visible(True)
 	
 	def close(self):
+		self.conf.writeFile(self.cfn)
 		self.tray = None
 		self.client.close()
 		self.client = None
@@ -50,6 +60,10 @@ class CmdPadClient(object):
 	def cp_mode(self, path, old, new):
 		old, new = int(old), int(new)
 		print "cp_mode:", path, old, new
+	
+	def __del__(self):
+		if self.tray is not None:
+			self.close()
 	
 	@staticmethod
 	def main():
@@ -88,13 +102,13 @@ class PopupMenu(object):
 
 Clients = {}
 def AddDevice(mgr, listener):
-	dev = listener.Device
+	dev = str(listener.Device)
 	print "AddDevice:", dev
 	if dev not in Clients:
 		Clients[dev] = CmdPadClient(listener)
 
 def RemoveDevice(mgr, listener):
-	dev = listener.Device
+	dev = str(listener.Device)
 	print "RemoveDevice:", dev
 	if dev not in Clients: return
 	Clients[dev].close()
@@ -104,3 +118,7 @@ if __name__ == "__main__":
 	manager = cpc.CPManagerListener(AddDevice, RemoveDevice)
 	manager.Devices()
 	CmdPadClient.main()
+	for dev in map(str, Clients.keys()):
+		Clients[dev].close()
+		del Clients[dev]
+

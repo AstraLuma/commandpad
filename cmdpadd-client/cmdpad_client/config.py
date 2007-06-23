@@ -10,6 +10,8 @@ from commandpad.client import BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4, BUTTON_5, 
                        BUTTON_B, MODE_A, MODE_B, MODES
 import gobject, gtk
 from threading import Lock
+import xml.sax
+import xml.sax.saxutils
 
 __all__ = 'ConfigDialog','Config'
 
@@ -160,7 +162,7 @@ class Config(object):
 	   [ actions.Action(ACTION), dict(OPTIONS) ]
 	"""
 	def __init__(self):
-		self.data = dict([ ((m,b), (None, None)) for m in MODES for b in range(9) ])
+		self.data = dict([ ((m,b), (Action(), {})) for m in MODES for b in range(9) ])
 	
 	def __indexes(self,index):
 		value = (Ellipsis,Ellipsis)
@@ -224,8 +226,42 @@ class Config(object):
 			raise IndexError("Too many values: %i values for %r" % (len(value), index))
 	
 	def __iter__(self):
-		for mode, buttons in enumerate(self.data):
-			for button, val in enumerate(buttons):
-				yield [(mode, button)] + list(val)
+		for k in self.data.keys():
+			yield k
+	
+	def items(self):
+		for k,v in self.data.items():
+			yield k,v
+	
+	def readFile(self, fn):
+		try:
+			xml.sax.parse(fn, _ConfigXMLReader(self))
+		except: pass
+	
+	def writeFile(self, fn):
+		out = xml.sax.saxutils.XMLGenerator(file(fn, 'w'), 'utf-8')
+		out.startDocument()
+		out.startElement('cmdpadd', {})
+		for (m,b), (act, ops) in self.items():
+			attrs = ops.copy()
+			attrs.update(_mode=str(m), _button=str(b), _action=str(act))
+			out.startElement('mb', attrs)
+			out.endElement('mb')
+		out.endElement('cmdpadd')
+		out.endDocument()
 
+class _ConfigXMLReader(xml.sax.handler.ContentHandler):
+	conf = None
+	def __init__(self, conf):
+		self.conf = conf
+	
+	def startElement(self, name, attrs):
+		if name == "mb":
+			m = int(attrs['_mode'])
+			del attrs['_mode']
+			b = int(attrs['_button'])
+			del attrs['_button']
+			act = attrs['_action']
+			del attrs['_action']
+			self.conf[m,b] = (Action(act), dict(attrs))
 
