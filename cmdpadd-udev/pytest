@@ -1,0 +1,14 @@
+#!/usr/bin/python
+from __future__ import with_statement
+from commandpad.device import *
+import sys, uinput, os
+from fcntl import ioctl
+
+fd = os.open("/dev/input/uinput", os.O_WRONLY | os.O_NDELAY)
+print "open(): fd=%i"%fd
+ioctl(fd, uinput.UI_SET_EVBIT, uinput.EV_KEY)
+ioctl(fd, uinput.UI_SET_EVBIT, uinput.EV_REP)
+ioctl(fd, uinput.UI_DEV_CREATE)
+z = DevEvent(sec=0, type=uinput.EV_KEY, code=uinput.KEY_ENTER, value=1)
+os.write(fd, z.pack())
+

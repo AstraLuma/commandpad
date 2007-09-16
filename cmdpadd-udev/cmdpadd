@@ -1,0 +1,43 @@
+#!/usr/bin/python
+from __future__ import with_statement
+from commandpad.device import *
+import sys, uinput, os
+from fcntl import ioctl
+
+
+MAPPING = {
+	304: 2, #1
+	305: 3, #2
+	306: 4, #3
+	307: 5, #4
+	308: 6, #5
+	309: 7, #6
+	310: 8, #7
+	311: 9, #8
+	312: 10, #9
+	313: 125, #A->LeftMeta
+	314: 126, #B->RightMeta
+}
+
+# (2007-07-15 14:27:15) Venkatesh:
+# int fd = open("/dev/uinput", O_WRONLY | O_NDELAY);
+# ioctl(fd, UI_SET_EVBIT, EV_KEY);   /// this is a keyboard
+# ioctl(fd, UI_SET_EVBIT, EV_REP);    /// repetition handled
+# // then to send the event
+# struct input_event z
+# z.type = EV_KEY;
+# z.code = KEY_ENTER;  // for example; other codes are in the kernel uinput.h
+# z.value = 1;
+# write(fd, &z, sizeof(z));
+
+ui_fd = os.open("/dev/input/uinput", os.O_WRONLY | os.O_NDELAY)
+print ui_fd
+ioctl(ui_fd, uinput.UI_SET_EVBIT, uinput.EV_KEY)
+try:
+	for ev in Device(sys.argv[1]):
+		if ev.code in MAPPING:
+			nev = DevEvent(sec=ev.sec, usec=ev.usec, type=ev.type, code=MAPPING[ev.code], value=ev.value)
+			print repr(ev), "->", repr(nev)
+			os.write(ui_fd, nev.pack())
+finally:
+	os.close(ui_fd)

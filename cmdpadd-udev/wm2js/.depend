@@ -1,0 +1,80 @@
+# DO NOT DELETE
+
+nunchuk.o: uinput.h /usr/include/sys/time.h /usr/include/features.h
+nunchuk.o: /usr/include/sys/cdefs.h /usr/include/gnu/stubs.h
+nunchuk.o: /usr/include/bits/types.h /usr/include/bits/wordsize.h
+nunchuk.o: /usr/lib/gcc/i486-slackware-linux/3.4.6/include/stddef.h
+nunchuk.o: /usr/include/bits/typesizes.h /usr/include/time.h
+nunchuk.o: /usr/include/bits/time.h /usr/include/sys/select.h
+nunchuk.o: /usr/include/bits/select.h /usr/include/bits/sigset.h wiimote.h
+nunchuk.o: /usr/include/bluetooth/bluetooth.h /usr/include/stdio.h
+nunchuk.o: /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h
+nunchuk.o: /usr/include/bits/wchar.h /usr/include/gconv.h
+nunchuk.o: /usr/lib/gcc/i486-slackware-linux/3.4.6/include/stdarg.h
+nunchuk.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
+nunchuk.o: /usr/include/stdint.h /usr/include/string.h /usr/include/endian.h
+nunchuk.o: /usr/include/bits/endian.h /usr/include/byteswap.h
+nunchuk.o: /usr/include/bits/byteswap.h nunchuk.h wm2js.h
+uinput.o: uinput.h /usr/include/sys/time.h /usr/include/features.h
+uinput.o: /usr/include/sys/cdefs.h /usr/include/gnu/stubs.h
+uinput.o: /usr/include/bits/types.h /usr/include/bits/wordsize.h
+uinput.o: /usr/lib/gcc/i486-slackware-linux/3.4.6/include/stddef.h
+uinput.o: /usr/include/bits/typesizes.h /usr/include/time.h
+uinput.o: /usr/include/bits/time.h /usr/include/sys/select.h
+uinput.o: /usr/include/bits/select.h /usr/include/bits/sigset.h wiimote.h
+uinput.o: /usr/include/bluetooth/bluetooth.h /usr/include/stdio.h
+uinput.o: /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h
+uinput.o: /usr/include/bits/wchar.h /usr/include/gconv.h
+uinput.o: /usr/lib/gcc/i486-slackware-linux/3.4.6/include/stdarg.h
+uinput.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
+uinput.o: /usr/include/stdint.h /usr/include/string.h /usr/include/endian.h
+uinput.o: /usr/include/bits/endian.h /usr/include/byteswap.h
+uinput.o: /usr/include/bits/byteswap.h wm2js.h /usr/include/fcntl.h
+uinput.o: /usr/include/bits/fcntl.h /usr/include/sys/types.h
+uinput.o: /usr/include/sys/ioctl.h /usr/include/bits/ioctls.h
+uinput.o: /usr/include/asm/ioctls.h /usr/include/asm/ioctl.h
+uinput.o: /usr/include/asm-generic/ioctl.h /usr/include/bits/ioctl-types.h
+uinput.o: /usr/include/sys/ttydefaults.h /usr/include/unistd.h
+uinput.o: /usr/include/bits/posix_opt.h /usr/include/bits/confname.h
+wiimote.o: wiimote.h /usr/include/bluetooth/bluetooth.h /usr/include/stdio.h
+wiimote.o: /usr/include/features.h /usr/include/sys/cdefs.h
+wiimote.o: /usr/include/gnu/stubs.h
+wiimote.o: /usr/lib/gcc/i486-slackware-linux/3.4.6/include/stddef.h
+wiimote.o: /usr/include/bits/types.h /usr/include/bits/wordsize.h
+wiimote.o: /usr/include/bits/typesizes.h /usr/include/libio.h
+wiimote.o: /usr/include/_G_config.h /usr/include/wchar.h
+wiimote.o: /usr/include/bits/wchar.h /usr/include/gconv.h
+wiimote.o: /usr/lib/gcc/i486-slackware-linux/3.4.6/include/stdarg.h
+wiimote.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
+wiimote.o: /usr/include/stdint.h /usr/include/string.h /usr/include/endian.h
+wiimote.o: /usr/include/bits/endian.h /usr/include/byteswap.h
+wiimote.o: /usr/include/bits/byteswap.h wm2js.h uinput.h
+wiimote.o: /usr/include/sys/time.h /usr/include/time.h
+wiimote.o: /usr/include/bits/time.h /usr/include/sys/select.h
+wiimote.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
+wiimote.o: /usr/include/bluetooth/l2cap.h /usr/include/sys/socket.h
+wiimote.o: /usr/include/sys/uio.h /usr/include/sys/types.h
+wiimote.o: /usr/include/bits/uio.h /usr/include/bits/socket.h
+wiimote.o: /usr/include/limits.h
+wiimote.o: /usr/lib/gcc/i486-slackware-linux/3.4.6/include/limits.h
+wiimote.o: /usr/include/bits/sockaddr.h /usr/include/asm/socket.h
+wiimote.o: /usr/include/asm/sockios.h /usr/include/unistd.h
+wiimote.o: /usr/include/bits/posix_opt.h /usr/include/bits/confname.h
+wm2js.o: wiimote.h /usr/include/bluetooth/bluetooth.h /usr/include/stdio.h
+wm2js.o: /usr/include/features.h /usr/include/sys/cdefs.h
+wm2js.o: /usr/include/gnu/stubs.h
+wm2js.o: /usr/lib/gcc/i486-slackware-linux/3.4.6/include/stddef.h
+wm2js.o: /usr/include/bits/types.h /usr/include/bits/wordsize.h
+wm2js.o: /usr/include/bits/typesizes.h /usr/include/libio.h
+wm2js.o: /usr/include/_G_config.h /usr/include/wchar.h
+wm2js.o: /usr/include/bits/wchar.h /usr/include/gconv.h
+wm2js.o: /usr/lib/gcc/i486-slackware-linux/3.4.6/include/stdarg.h
+wm2js.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
+wm2js.o: /usr/include/stdint.h /usr/include/string.h /usr/include/endian.h
+wm2js.o: /usr/include/bits/endian.h /usr/include/byteswap.h
+wm2js.o: /usr/include/bits/byteswap.h wm2js.h uinput.h
+wm2js.o: /usr/include/sys/time.h /usr/include/time.h /usr/include/bits/time.h
+wm2js.o: /usr/include/sys/select.h /usr/include/bits/select.h
+wm2js.o: /usr/include/bits/sigset.h nunchuk.h /usr/include/unistd.h
+wm2js.o: /usr/include/bits/posix_opt.h /usr/include/bits/confname.h
+wm2js.o: /usr/include/stdlib.h
