@@ -3,6 +3,7 @@
 Defines a structure mixin class.
 """
 import struct
+from StringIO import StringIO
 __all__ = 'Struct',
 
 
@@ -71,6 +72,7 @@ def _checkvalue(typ, value):
 			c = int(typ[:-1])
 			return len(str(value)) == c and 0 <= c <= 255
 		elif typ == 'P': return 0 <= long(value) < _WORDSIZE
+		elif issubclass(typ, Struct): return isinstance(value, typ)
 	except (ValueError, TypeError), err:
 		return False
 
@@ -97,7 +99,6 @@ class _FieldDescriptor(object):
 		
 
 class _StructMetaclass(type):
-	_struct = None
 	def __new__(cls, name, bases, dct):
 		format = ''
 		fields = dct['__fields__']
@@ -105,7 +106,6 @@ class _StructMetaclass(type):
 			dct[name] = _FieldDescriptor(nam,typ,doc)
 			format += typ
 		self = super(_StructMetaclass, cls).__new__(cls, name, bases, dct)
-		self._struct = struct.Struct(format)
 		return self
 	def __len__(cls):
 		return cls._struct.size
@@ -134,7 +134,9 @@ class Struct(object):
 					value = '\0'
 				elif typ[-1] in 'sp':
 					value = ""
-			print name
+				elif issubclass(typ, Struct):
+					value = typ()
+			print "Struct.__init__",name
 			setattr(self, name, value)
 	
 	def __repr__(self):
@@ -147,6 +149,20 @@ class Struct(object):
 		for name,_,_ in self.__fields__:
 			yield name, getattr(self, name)
 	
+	def __pack_info(self, order):
+		"""
+		Returns a list of:
+		* (format,value) pairs
+		* binary str
+		This includes substructs
+		"""
+		for name,typ,_ in self.__fields__:
+			value = getattr(self, name)
+			if issubclass(typ, Struct):
+				yield value.pack(order)
+			else:
+				yield typ,value
+	
 	def pack(self, order=''):
 		"""s.pack([string]) -> string
 		Returns a binary string of this structure's raw data, a la 
@@ -155,7 +171,15 @@ class Struct(object):
 		order can be '@', '=', '<', '>', or '!'; see the struct module 
 		documentation for what these mean.
 		"""
-		return struct.pack(order+self._struct.format, *(getattr(self, n) for n,_,_ in self.__fields__))
+		rv = StringIO()
+		format = ""
+		values = []
+		for val in self.__pack_info(order):
+			if isinstance(val, str):
+				if len(format) > 0:
+					pass
+				rv.write(str)
+		return rv.getvalue()
 	
 	@classmethod
 	def unpack(cls, data, order=''):
@@ -170,5 +194,12 @@ class Struct(object):
 		
 		Do not call on Struct directly; call on a subclass.
 		"""
+		rv = StringIO(data)
+		for name,typ,_ in self.__fields__:
+			value = getattr(self, name)
+			if issubclass(typ, Struct):
+				rv.write(value.pack(order))
+			else:
+				rv.write(struct.pack(order+typ, value))
 		return cls(struct.unpack(order+cls._struct.format, data))
 
