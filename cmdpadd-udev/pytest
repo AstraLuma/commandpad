@@ -1,6 +1,5 @@
 #!/usr/bin/python
-from __future__ import with_statement
-import sys, uinput, os, udev, time
+import uinput, udev, time
 
 # Initialize
 fd = udev.EvdevStream(udev.FindUinput(), 'w')

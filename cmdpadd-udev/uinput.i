@@ -26,8 +26,16 @@
     $result = PyLong_FromLong($1);
 }
 
-typedef unsigned int __u16;
-typedef signed long __s32;
+%typemap(in) __u16 {
+    $1 = PyLong_AsUnsignedLong($input);
+}
+%typemap(out) __u16 {
+	PyObject * spam = 0;
+	spam = PyLong_FromUnsignedLong($1);
+    $result = PyLong_FromUnsignedLong($1);
+}
+
+typedef signed long int __s32;
 
 // This does not create the cleanest wrapper (I'd rather a dynamic-updater with 
 // a custom class), but it works.
@@ -87,7 +95,8 @@ struct timeval
 			return NULL;
 		}
 		rv = malloc(sizeof(struct type));
-		memcpy(&rv, PyString_AsString(data), sizeof(struct type));
+		//printf("type::unpack:rv:%x\n", rv);
+		memcpy(rv, PyString_AsString(data), sizeof(struct type));
 		return rv;
 	}
 	

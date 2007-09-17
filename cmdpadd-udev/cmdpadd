@@ -1,43 +1,44 @@
 #!/usr/bin/python
-from __future__ import with_statement
-from commandpad.device import *
-import sys, uinput, os
-from fcntl import ioctl
-
+import uinput, udev, sys
+from commandpad import findpads
 
 MAPPING = {
-	304: 2, #1
-	305: 3, #2
-	306: 4, #3
-	307: 5, #4
-	308: 6, #5
-	309: 7, #6
-	310: 8, #7
-	311: 9, #8
-	312: 10, #9
-	313: 125, #A->LeftMeta
-	314: 126, #B->RightMeta
+	uinput.BTN_A: uinput.KEY_1,
+	uinput.BTN_B: uinput.KEY_2,
+	uinput.BTN_C: uinput.KEY_3,
+	uinput.BTN_X: uinput.KEY_4,
+	uinput.BTN_Y: uinput.KEY_5,
+	uinput.BTN_Z: uinput.KEY_6,
+	uinput.BTN_TL: uinput.KEY_7,
+	uinput.BTN_TR: uinput.KEY_8,
+	uinput.BTN_TL2: uinput.KEY_9,
+	uinput.BTN_TR2: uinput.KEY_LEFTMETA,
+	uinput.BTN_SELECT: uinput.KEY_RIGHTMETA,
 }
 
-# (2007-07-15 14:27:15) Venkatesh:
-# int fd = open("/dev/uinput", O_WRONLY | O_NDELAY);
-# ioctl(fd, UI_SET_EVBIT, EV_KEY);   /// this is a keyboard
-# ioctl(fd, UI_SET_EVBIT, EV_REP);    /// repetition handled
-# // then to send the event
-# struct input_event z
-# z.type = EV_KEY;
-# z.code = KEY_ENTER;  // for example; other codes are in the kernel uinput.h
-# z.value = 1;
-# write(fd, &z, sizeof(z));
+findpads.init()
 
-ui_fd = os.open("/dev/input/uinput", os.O_WRONLY | os.O_NDELAY)
-print ui_fd
-ioctl(ui_fd, uinput.UI_SET_EVBIT, uinput.EV_KEY)
+# Initialize
+uidev = udev.EvdevStream(udev.FindUinput(), 'w')
 try:
-	for ev in Device(sys.argv[1]):
-		if ev.code in MAPPING:
-			nev = DevEvent(sec=ev.sec, usec=ev.usec, type=ev.type, code=MAPPING[ev.code], value=ev.value)
-			print repr(ev), "->", repr(nev)
-			os.write(ui_fd, nev.pack())
+	uidev.write(udev.uinput_user_dev(name="Saitek Magic Bus",
+		id=udev.input_id(bustype=0,vendor=0x06A3, product=0x8000, version=0x0111)))
+	uidev.ioctl(uinput.UI_SET_EVBIT, uinput.EV_KEY)
+	for key in MAPPING.itervalues():
+		uidev.ioctl(uinput.UI_SET_KEYBIT, key)
+	uidev.ioctl(uinput.UI_DEV_CREATE)
+	try:
+		rdev = udev.EvdevStream(findpads.getEventFiles().next(), 'r')
+		try:
+			for event in rdev.iter(uinput.input_event):
+				if event.code in MAPPING:
+					event.code = MAPPING[event.code]
+					# Send an event
+					uidev.write(event)
+		finally:
+			rdev.close()
+	finally:
+# Uninit
+		uidev.ioctl(uinput.UI_DEV_DESTROY)
 finally:
-	os.close(ui_fd)
+	uidev.close()
