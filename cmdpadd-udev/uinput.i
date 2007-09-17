@@ -76,26 +76,38 @@ struct timeval
     __suseconds_t tv_usec;	/* Microseconds.  */
 };
 
-%define SIZEOF_STRUCT(t)
-%constant sizeof_##t = sizeof(struct t)
+%define STRUCT_UTILS(type)
+%extend type {
+	char *pack() {
+		char* rv = 0;
+		rv = malloc(sizeof(struct type));
+		memcpy(rv, $self, sizeof(struct type));
+		return rv;
+	}
+	
+	size_t __len__() {
+		return sizeof(struct type);
+	}
+}
 %enddef
-    SIZEOF_STRUCT(ff_condition_effect);
-    SIZEOF_STRUCT(ff_constant_effect);
-    SIZEOF_STRUCT(ff_effect);
-    // ff_effect_u is a union in ff_effect
-    SIZEOF_STRUCT(ff_envelope);
-    SIZEOF_STRUCT(ff_periodic_effect);
-    SIZEOF_STRUCT(ff_ramp_effect);
-    SIZEOF_STRUCT(ff_replay);
-    SIZEOF_STRUCT(ff_rumble_effect);
-    SIZEOF_STRUCT(ff_trigger);
-    SIZEOF_STRUCT(input_absinfo);
-    SIZEOF_STRUCT(uinput_ff_erase);
-    SIZEOF_STRUCT(uinput_ff_upload);
-    SIZEOF_STRUCT(input_id);
-    SIZEOF_STRUCT(timeval);
-    SIZEOF_STRUCT(input_event);
-    SIZEOF_STRUCT(uinput_user_dev);
+
+STRUCT_UTILS(ff_condition_effect);
+STRUCT_UTILS(ff_constant_effect);
+STRUCT_UTILS(ff_effect);
+// ff_effect_u is a union in ff_effect
+STRUCT_UTILS(ff_envelope);
+STRUCT_UTILS(ff_periodic_effect);
+STRUCT_UTILS(ff_ramp_effect);
+STRUCT_UTILS(ff_replay);
+STRUCT_UTILS(ff_rumble_effect);
+STRUCT_UTILS(ff_trigger);
+STRUCT_UTILS(input_absinfo);
+STRUCT_UTILS(uinput_ff_erase);
+STRUCT_UTILS(uinput_ff_upload);
+STRUCT_UTILS(input_id);
+STRUCT_UTILS(timeval);
+STRUCT_UTILS(input_event);
+STRUCT_UTILS(uinput_user_dev);
 
 %{
 // Some forward declarations
