@@ -2,7 +2,7 @@
 """
 Handles quite a bit of the back to uinput.
 """
-import sys, uinput, os, stat, pystruct
+import sys, uinput, os, stat
 from fcntl import ioctl
 
 UINPUT_DEVICES = ['/dev/uinput', '/dev/misc/uinput', '/dev/input/uinput']
@@ -18,20 +18,45 @@ def FindUinput(*others):
 	else:
 		return None
 
-class InputEvent(pystruct.Struct):
-	"""
-	This is sent to and from uinput and evdev devices (the input subsystem).
-	"""
-	__fields__ = [
-		('sec', 'l', """Number of seconds this occured"""),
-		('usec', 'l', """The microseconds of the timestamp"""),
-		('type', 'H', """The type of event"""),
-		('code', 'H', """The input button/axis/whatever"""),
-		('value', 'l', """The current value"""),
-		]
+def input_id(bustype=None, vendor=None, product=None, version=None):
+	rv = uinput.input_id()
+	if bustype is not None: rv.bustype = bustype
+	if vendor is not None: rv.vendor = vendor
+	if product is not None: rv.product = product
+	if version is not None: rv.version = version
+	return rv
+
+def timeval(sec=None, usec=None):
+	rv = uinput.timeval()
+	if sec is not None: rv.sec = sec
+	if usec is not None: rv.usec = usec
+	return rv
+
+def input_event(time=None, type=None, code=None, value=None):
+	rv = uinput.input_event()
+	if time is not None: rv.time = time
+	if type is not None: rv.type = type
+	if code is not None: rv.code = code
+	if value is not None: rv.value = value
+	return rv
+
+def uinput_user_dev(name=None, id=None, ff_effects_max=None, absmax=None, absmin=None, absfuzz=None, absflat=None):
+	rv = uinput.uinput_user_dev()
+	if name is not None: rv.name = name
+	if id is not None: rv.id = id
+	if ff_effects_max is not None: rv.ff_effects_max = ff_effects_max
+	if absmax is not None: rv.absmax = absmax
+	if absmin is not None: rv.absmin = absmin
+	if absfuzz is not None: rv.absfuzz = absfuzz
+	if absflat is not None: rv.absflat = absflat
+	return rv
 
 if __name__ == '__main__':
-	ie = InputEvent(sec=1, usec=2, type=3, code=4)
-	print repr(ie)
-	print ie.__dict__
+	uud = uinput_user_dev(name="Saitek Magic Bus", ff_effects_max=0, absmax=[1]*(uinput.ABS_MAX+1))
+	print repr(uud)
+	print uud.__dict__
+	print hex(int(uud.this))
+	print dir(uud.this)
+	print uud.absmax
+	print uud.absmin
 	

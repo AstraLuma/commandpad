@@ -1,4 +1,6 @@
+// vim:syn=c
 %module uinput
+%feature("autodoc", "1");
 
 #ifndef SWIGPYTHON
 #error "Doesn't work except with Python"
@@ -6,13 +8,94 @@
 
 %{
 /* Put headers and other declarations here */
-//#include <sys/ioctl.h>
 #include <linux/input.h>
 #include <linux/uinput.h>
 %}
 
+%typemap(in) __time_t {
+    $1 = PyLong_AsLong($input);
+}
+%typemap(out) __time_t {
+    $result = PyLong_FromLong($1);
+}
+
+%typemap(in) __suseconds_t {
+    $1 = PyLong_AsLong($input);
+}
+%typemap(out) __suseconds_t {
+    $result = PyLong_FromLong($1);
+}
+
+%typemap(in) __u16 {
+    $1 = PyLong_AsUnsignedLong($input);
+}
+%typemap(out) __u16 {
+    $result = PyLong_FromUnsignedLong($1);
+}
+
+// This does not create the cleanest wrapper (I'd rather a dynamic-updater with 
+// a custom class), but it works.
+
+%typemap(in) int[ANY](int temp[$1_dim0]) {
+  int i;
+  if (!PySequence_Check($input)) {
+      PyErr_SetString(PyExc_TypeError,"Expecting a sequence");
+      return NULL;
+  }
+  if (PyObject_Length($input) != $1_dim0) {
+      PyErr_SetString(PyExc_ValueError,"Expecting a sequence with $1_dim0 elements");
+      return NULL;
+  }
+  for (i = 0; i < $1_dim0; i++) {
+      PyObject *o = PySequence_GetItem($input,i);
+      if (!PyInt_Check(o)) {
+         Py_XDECREF(o);
+         PyErr_SetString(PyExc_ValueError,"Expecting a sequence of ints");
+         return NULL;
+      }
+      temp[i] = PyInt_AsLong(o);
+      Py_DECREF(o);
+  }
+  $1 = &temp[0];
+}
+
+%typemap(out) int[ANY](int temp[$1_dim0]) {
+  int i;
+  $result = PyTuple_New($1_dim0);
+  for (i = 0; i < $1_dim0; i++) {
+    PyTuple_SetItem($result, i, PyInt_FromLong($1[i]));
+  }
+}
+
 %include <linux/input.h>
 %include <linux/uinput.h>
+
+struct timeval
+{
+    __time_t tv_sec;		/* Seconds.  */
+    __suseconds_t tv_usec;	/* Microseconds.  */
+};
+
+%define SIZEOF_STRUCT(t)
+%constant sizeof_##t = sizeof(struct t)
+%enddef
+    SIZEOF_STRUCT(ff_condition_effect);
+    SIZEOF_STRUCT(ff_constant_effect);
+    SIZEOF_STRUCT(ff_effect);
+    // ff_effect_u is a union in ff_effect
+    SIZEOF_STRUCT(ff_envelope);
+    SIZEOF_STRUCT(ff_periodic_effect);
+    SIZEOF_STRUCT(ff_ramp_effect);
+    SIZEOF_STRUCT(ff_replay);
+    SIZEOF_STRUCT(ff_rumble_effect);
+    SIZEOF_STRUCT(ff_trigger);
+    SIZEOF_STRUCT(input_absinfo);
+    SIZEOF_STRUCT(uinput_ff_erase);
+    SIZEOF_STRUCT(uinput_ff_upload);
+    SIZEOF_STRUCT(input_id);
+    SIZEOF_STRUCT(timeval);
+    SIZEOF_STRUCT(input_event);
+    SIZEOF_STRUCT(uinput_user_dev);
 
 %{
 // Some forward declarations
@@ -27,12 +110,15 @@ PyMODINIT_FUNC
 inituinput(void)
 {
     PyObject *m, *d;
+    
     m = Py_InitModule("uinput",SwigMethods);
     if (m == NULL)
        return;
     SWIG_init();
     
     d = PyModule_GetDict(m);
+
+// I use these to dig out the raw value of the structs
 #define CONST(c) SWIG_Python_SetConstant(d, #c,SWIG_From_long((long)(c)))
 // SWIG gets confused on these
     CONST(UI_SET_EVBIT);
@@ -47,555 +133,6 @@ inituinput(void)
     CONST(UI_SET_SWBIT);
     CONST(UI_DEV_CREATE);
     CONST(UI_DEV_DESTROY);
-// And it just doesn't do these right...
-    CONST(EV_VERSION);
-    CONST(EV_SYN);
-    CONST(EV_KEY);
-    CONST(EV_REL);
-    CONST(EV_ABS);
-    CONST(EV_MSC);
-    CONST(EV_SW);
-    CONST(EV_LED);
-    CONST(EV_SND);
-    CONST(EV_REP);
-    CONST(EV_FF);
-    CONST(EV_PWR);
-    CONST(EV_FF_STATUS);
-    CONST(EV_MAX);
-    CONST(SYN_REPORT);
-    CONST(SYN_CONFIG);
-    CONST(KEY_RESERVED);
-    CONST(KEY_ESC);
-    CONST(KEY_1);
-    CONST(KEY_2);
-    CONST(KEY_3);
-    CONST(KEY_4);
-    CONST(KEY_5);
-    CONST(KEY_6);
-    CONST(KEY_7);
-    CONST(KEY_8);
-    CONST(KEY_9);
-    CONST(KEY_0);
-    CONST(KEY_MINUS);
-    CONST(KEY_EQUAL);
-    CONST(KEY_BACKSPACE);
-    CONST(KEY_TAB);
-    CONST(KEY_Q);
-    CONST(KEY_W);
-    CONST(KEY_E);
-    CONST(KEY_R);
-    CONST(KEY_T);
-    CONST(KEY_Y);
-    CONST(KEY_U);
-    CONST(KEY_I);
-    CONST(KEY_O);
-    CONST(KEY_P);
-    CONST(KEY_LEFTBRACE);
-    CONST(KEY_RIGHTBRACE);
-    CONST(KEY_ENTER);
-    CONST(KEY_LEFTCTRL);
-    CONST(KEY_A);
-    CONST(KEY_S);
-    CONST(KEY_D);
-    CONST(KEY_F);
-    CONST(KEY_G);
-    CONST(KEY_H);
-    CONST(KEY_J);
-    CONST(KEY_K);
-    CONST(KEY_L);
-    CONST(KEY_SEMICOLON);
-    CONST(KEY_APOSTROPHE);
-    CONST(KEY_GRAVE);
-    CONST(KEY_LEFTSHIFT);
-    CONST(KEY_BACKSLASH);
-    CONST(KEY_Z);
-    CONST(KEY_X);
-    CONST(KEY_C);
-    CONST(KEY_V);
-    CONST(KEY_B);
-    CONST(KEY_N);
-    CONST(KEY_M);
-    CONST(KEY_COMMA);
-    CONST(KEY_DOT);
-    CONST(KEY_SLASH);
-    CONST(KEY_RIGHTSHIFT);
-    CONST(KEY_KPASTERISK);
-    CONST(KEY_LEFTALT);
-    CONST(KEY_SPACE);
-    CONST(KEY_CAPSLOCK);
-    CONST(KEY_F1);
-    CONST(KEY_F2);
-    CONST(KEY_F3);
-    CONST(KEY_F4);
-    CONST(KEY_F5);
-    CONST(KEY_F6);
-    CONST(KEY_F7);
-    CONST(KEY_F8);
-    CONST(KEY_F9);
-    CONST(KEY_F10);
-    CONST(KEY_NUMLOCK);
-    CONST(KEY_SCROLLLOCK);
-    CONST(KEY_KP7);
-    CONST(KEY_KP8);
-    CONST(KEY_KP9);
-    CONST(KEY_KPMINUS);
-    CONST(KEY_KP4);
-    CONST(KEY_KP5);
-    CONST(KEY_KP6);
-    CONST(KEY_KPPLUS);
-    CONST(KEY_KP1);
-    CONST(KEY_KP2);
-    CONST(KEY_KP3);
-    CONST(KEY_KP0);
-    CONST(KEY_KPDOT);
-    CONST(KEY_ZENKAKUHANKAKU);
-    CONST(KEY_102ND);
-    CONST(KEY_F11);
-    CONST(KEY_F12);
-    CONST(KEY_RO);
-    CONST(KEY_KATAKANA);
-    CONST(KEY_HIRAGANA);
-    CONST(KEY_HENKAN);
-    CONST(KEY_KATAKANAHIRAGANA);
-    CONST(KEY_MUHENKAN);
-    CONST(KEY_KPJPCOMMA);
-    CONST(KEY_KPENTER);
-    CONST(KEY_RIGHTCTRL);
-    CONST(KEY_KPSLASH);
-    CONST(KEY_SYSRQ);
-    CONST(KEY_RIGHTALT);
-    CONST(KEY_LINEFEED);
-    CONST(KEY_HOME);
-    CONST(KEY_UP);
-    CONST(KEY_PAGEUP);
-    CONST(KEY_LEFT);
-    CONST(KEY_RIGHT);
-    CONST(KEY_END);
-    CONST(KEY_DOWN);
-    CONST(KEY_PAGEDOWN);
-    CONST(KEY_INSERT);
-    CONST(KEY_DELETE);
-    CONST(KEY_MACRO);
-    CONST(KEY_MUTE);
-    CONST(KEY_VOLUMEDOWN);
-    CONST(KEY_VOLUMEUP);
-    CONST(KEY_POWER);
-    CONST(KEY_KPEQUAL);
-    CONST(KEY_KPPLUSMINUS);
-    CONST(KEY_PAUSE);
-    CONST(KEY_KPCOMMA);
-    CONST(KEY_HANGEUL);
-    CONST(KEY_HANGUEL);
-    CONST(KEY_HANJA);
-    CONST(KEY_YEN);
-    CONST(KEY_LEFTMETA);
-    CONST(KEY_RIGHTMETA);
-    CONST(KEY_COMPOSE);
-    CONST(KEY_STOP);
-    CONST(KEY_AGAIN);
-    CONST(KEY_PROPS);
-    CONST(KEY_UNDO);
-    CONST(KEY_FRONT);
-    CONST(KEY_COPY);
-    CONST(KEY_OPEN);
-    CONST(KEY_PASTE);
-    CONST(KEY_FIND);
-    CONST(KEY_CUT);
-    CONST(KEY_HELP);
-    CONST(KEY_MENU);
-    CONST(KEY_CALC);
-    CONST(KEY_SETUP);
-    CONST(KEY_SLEEP);
-    CONST(KEY_WAKEUP);
-    CONST(KEY_FILE);
-    CONST(KEY_SENDFILE);
-    CONST(KEY_DELETEFILE);
-    CONST(KEY_XFER);
-    CONST(KEY_PROG1);
-    CONST(KEY_PROG2);
-    CONST(KEY_WWW);
-    CONST(KEY_MSDOS);
-    CONST(KEY_COFFEE);
-    CONST(KEY_DIRECTION);
-    CONST(KEY_CYCLEWINDOWS);
-    CONST(KEY_MAIL);
-    CONST(KEY_BOOKMARKS);
-    CONST(KEY_COMPUTER);
-    CONST(KEY_BACK);
-    CONST(KEY_FORWARD);
-    CONST(KEY_CLOSECD);
-    CONST(KEY_EJECTCD);
-    CONST(KEY_EJECTCLOSECD);
-    CONST(KEY_NEXTSONG);
-    CONST(KEY_PLAYPAUSE);
-    CONST(KEY_PREVIOUSSONG);
-    CONST(KEY_STOPCD);
-    CONST(KEY_RECORD);
-    CONST(KEY_REWIND);
-    CONST(KEY_PHONE);
-    CONST(KEY_ISO);
-    CONST(KEY_CONFIG);
-    CONST(KEY_HOMEPAGE);
-    CONST(KEY_REFRESH);
-    CONST(KEY_EXIT);
-    CONST(KEY_MOVE);
-    CONST(KEY_EDIT);
-    CONST(KEY_SCROLLUP);
-    CONST(KEY_SCROLLDOWN);
-    CONST(KEY_KPLEFTPAREN);
-    CONST(KEY_KPRIGHTPAREN);
-    CONST(KEY_NEW);
-    CONST(KEY_REDO);
-    CONST(KEY_F13);
-    CONST(KEY_F14);
-    CONST(KEY_F15);
-    CONST(KEY_F16);
-    CONST(KEY_F17);
-    CONST(KEY_F18);
-    CONST(KEY_F19);
-    CONST(KEY_F20);
-    CONST(KEY_F21);
-    CONST(KEY_F22);
-    CONST(KEY_F23);
-    CONST(KEY_F24);
-    CONST(KEY_PLAYCD);
-    CONST(KEY_PAUSECD);
-    CONST(KEY_PROG3);
-    CONST(KEY_PROG4);
-    CONST(KEY_SUSPEND);
-    CONST(KEY_CLOSE);
-    CONST(KEY_PLAY);
-    CONST(KEY_FASTFORWARD);
-    CONST(KEY_BASSBOOST);
-    CONST(KEY_PRINT);
-    CONST(KEY_HP);
-    CONST(KEY_CAMERA);
-    CONST(KEY_SOUND);
-    CONST(KEY_QUESTION);
-    CONST(KEY_EMAIL);
-    CONST(KEY_CHAT);
-    CONST(KEY_SEARCH);
-    CONST(KEY_CONNECT);
-    CONST(KEY_FINANCE);
-    CONST(KEY_SPORT);
-    CONST(KEY_SHOP);
-    CONST(KEY_ALTERASE);
-    CONST(KEY_CANCEL);
-    CONST(KEY_BRIGHTNESSDOWN);
-    CONST(KEY_BRIGHTNESSUP);
-    CONST(KEY_MEDIA);
-    CONST(KEY_SWITCHVIDEOMODE);
-    CONST(KEY_KBDILLUMTOGGLE);
-    CONST(KEY_KBDILLUMDOWN);
-    CONST(KEY_KBDILLUMUP);
-    CONST(KEY_SEND);
-    CONST(KEY_REPLY);
-    CONST(KEY_FORWARDMAIL);
-    CONST(KEY_SAVE);
-    CONST(KEY_DOCUMENTS);
-    CONST(KEY_BATTERY);
-    CONST(KEY_BLUETOOTH);
-    CONST(KEY_WLAN);
-    CONST(KEY_UNKNOWN);
-    CONST(BTN_MISC);
-    CONST(BTN_0);
-    CONST(BTN_1);
-    CONST(BTN_2);
-    CONST(BTN_3);
-    CONST(BTN_4);
-    CONST(BTN_5);
-    CONST(BTN_6);
-    CONST(BTN_7);
-    CONST(BTN_8);
-    CONST(BTN_9);
-    CONST(BTN_MOUSE);
-    CONST(BTN_LEFT);
-    CONST(BTN_RIGHT);
-    CONST(BTN_MIDDLE);
-    CONST(BTN_SIDE);
-    CONST(BTN_EXTRA);
-    CONST(BTN_FORWARD);
-    CONST(BTN_BACK);
-    CONST(BTN_TASK);
-    CONST(BTN_JOYSTICK);
-    CONST(BTN_TRIGGER);
-    CONST(BTN_THUMB);
-    CONST(BTN_THUMB2);
-    CONST(BTN_TOP);
-    CONST(BTN_TOP2);
-    CONST(BTN_PINKIE);
-    CONST(BTN_BASE);
-    CONST(BTN_BASE2);
-    CONST(BTN_BASE3);
-    CONST(BTN_BASE4);
-    CONST(BTN_BASE5);
-    CONST(BTN_BASE6);
-    CONST(BTN_DEAD);
-    CONST(BTN_GAMEPAD);
-    CONST(BTN_A);
-    CONST(BTN_B);
-    CONST(BTN_C);
-    CONST(BTN_X);
-    CONST(BTN_Y);
-    CONST(BTN_Z);
-    CONST(BTN_TL);
-    CONST(BTN_TR);
-    CONST(BTN_TL2);
-    CONST(BTN_TR2);
-    CONST(BTN_SELECT);
-    CONST(BTN_START);
-    CONST(BTN_MODE);
-    CONST(BTN_THUMBL);
-    CONST(BTN_THUMBR);
-    CONST(BTN_DIGI);
-    CONST(BTN_TOOL_PEN);
-    CONST(BTN_TOOL_RUBBER);
-    CONST(BTN_TOOL_BRUSH);
-    CONST(BTN_TOOL_PENCIL);
-    CONST(BTN_TOOL_AIRBRUSH);
-    CONST(BTN_TOOL_FINGER);
-    CONST(BTN_TOOL_MOUSE);
-    CONST(BTN_TOOL_LENS);
-    CONST(BTN_TOUCH);
-    CONST(BTN_STYLUS);
-    CONST(BTN_STYLUS2);
-    CONST(BTN_TOOL_DOUBLETAP);
-    CONST(BTN_TOOL_TRIPLETAP);
-    CONST(BTN_WHEEL);
-    CONST(BTN_GEAR_DOWN);
-    CONST(BTN_GEAR_UP);
-    CONST(KEY_OK);
-    CONST(KEY_SELECT);
-    CONST(KEY_GOTO);
-    CONST(KEY_CLEAR);
-    CONST(KEY_POWER2);
-    CONST(KEY_OPTION);
-    CONST(KEY_INFO);
-    CONST(KEY_TIME);
-    CONST(KEY_VENDOR);
-    CONST(KEY_ARCHIVE);
-    CONST(KEY_PROGRAM);
-    CONST(KEY_CHANNEL);
-    CONST(KEY_FAVORITES);
-    CONST(KEY_EPG);
-    CONST(KEY_PVR);
-    CONST(KEY_MHP);
-    CONST(KEY_LANGUAGE);
-    CONST(KEY_TITLE);
-    CONST(KEY_SUBTITLE);
-    CONST(KEY_ANGLE);
-    CONST(KEY_ZOOM);
-    CONST(KEY_MODE);
-    CONST(KEY_KEYBOARD);
-    CONST(KEY_SCREEN);
-    CONST(KEY_PC);
-    CONST(KEY_TV);
-    CONST(KEY_TV2);
-    CONST(KEY_VCR);
-    CONST(KEY_VCR2);
-    CONST(KEY_SAT);
-    CONST(KEY_SAT2);
-    CONST(KEY_CD);
-    CONST(KEY_TAPE);
-    CONST(KEY_RADIO);
-    CONST(KEY_TUNER);
-    CONST(KEY_PLAYER);
-    CONST(KEY_TEXT);
-    CONST(KEY_DVD);
-    CONST(KEY_AUX);
-    CONST(KEY_MP3);
-    CONST(KEY_AUDIO);
-    CONST(KEY_VIDEO);
-    CONST(KEY_DIRECTORY);
-    CONST(KEY_LIST);
-    CONST(KEY_MEMO);
-    CONST(KEY_CALENDAR);
-    CONST(KEY_RED);
-    CONST(KEY_GREEN);
-    CONST(KEY_YELLOW);
-    CONST(KEY_BLUE);
-    CONST(KEY_CHANNELUP);
-    CONST(KEY_CHANNELDOWN);
-    CONST(KEY_FIRST);
-    CONST(KEY_LAST);
-    CONST(KEY_AB);
-    CONST(KEY_NEXT);
-    CONST(KEY_RESTART);
-    CONST(KEY_SLOW);
-    CONST(KEY_SHUFFLE);
-    CONST(KEY_BREAK);
-    CONST(KEY_PREVIOUS);
-    CONST(KEY_DIGITS);
-    CONST(KEY_TEEN);
-    CONST(KEY_TWEN);
-    CONST(KEY_VIDEOPHONE);
-    CONST(KEY_GAMES);
-    CONST(KEY_ZOOMIN);
-    CONST(KEY_ZOOMOUT);
-    CONST(KEY_ZOOMRESET);
-    CONST(KEY_WORDPROCESSOR);
-    CONST(KEY_EDITOR);
-    CONST(KEY_SPREADSHEET);
-    CONST(KEY_GRAPHICSEDITOR);
-    CONST(KEY_PRESENTATION);
-    CONST(KEY_DATABASE);
-    CONST(KEY_NEWS);
-    CONST(KEY_VOICEMAIL);
-    CONST(KEY_ADDRESSBOOK);
-    CONST(KEY_MESSENGER);
-    CONST(KEY_DEL_EOL);
-    CONST(KEY_DEL_EOS);
-    CONST(KEY_INS_LINE);
-    CONST(KEY_DEL_LINE);
-    CONST(KEY_FN);
-    CONST(KEY_FN_ESC);
-    CONST(KEY_FN_F1);
-    CONST(KEY_FN_F2);
-    CONST(KEY_FN_F3);
-    CONST(KEY_FN_F4);
-    CONST(KEY_FN_F5);
-    CONST(KEY_FN_F6);
-    CONST(KEY_FN_F7);
-    CONST(KEY_FN_F8);
-    CONST(KEY_FN_F9);
-    CONST(KEY_FN_F10);
-    CONST(KEY_FN_F11);
-    CONST(KEY_FN_F12);
-    CONST(KEY_FN_1);
-    CONST(KEY_FN_2);
-    CONST(KEY_FN_D);
-    CONST(KEY_FN_E);
-    CONST(KEY_FN_F);
-    CONST(KEY_FN_S);
-    CONST(KEY_FN_B);
-    CONST(KEY_BRL_DOT1);
-    CONST(KEY_BRL_DOT2);
-    CONST(KEY_BRL_DOT3);
-    CONST(KEY_BRL_DOT4);
-    CONST(KEY_BRL_DOT5);
-    CONST(KEY_BRL_DOT6);
-    CONST(KEY_BRL_DOT7);
-    CONST(KEY_BRL_DOT8);
-    CONST(KEY_MIN_INTERESTING);
-    CONST(KEY_MAX);
-    CONST(REL_X);
-    CONST(REL_Y);
-    CONST(REL_Z);
-    CONST(REL_RX);
-    CONST(REL_RY);
-    CONST(REL_RZ);
-    CONST(REL_HWHEEL);
-    CONST(REL_DIAL);
-    CONST(REL_WHEEL);
-    CONST(REL_MISC);
-    CONST(REL_MAX);
-    CONST(ABS_X);
-    CONST(ABS_Y);
-    CONST(ABS_Z);
-    CONST(ABS_RX);
-    CONST(ABS_RY);
-    CONST(ABS_RZ);
-    CONST(ABS_THROTTLE);
-    CONST(ABS_RUDDER);
-    CONST(ABS_WHEEL);
-    CONST(ABS_GAS);
-    CONST(ABS_BRAKE);
-    CONST(ABS_HAT0X);
-    CONST(ABS_HAT0Y);
-    CONST(ABS_HAT1X);
-    CONST(ABS_HAT1Y);
-    CONST(ABS_HAT2X);
-    CONST(ABS_HAT2Y);
-    CONST(ABS_HAT3X);
-    CONST(ABS_HAT3Y);
-    CONST(ABS_PRESSURE);
-    CONST(ABS_DISTANCE);
-    CONST(ABS_TILT_X);
-    CONST(ABS_TILT_Y);
-    CONST(ABS_TOOL_WIDTH);
-    CONST(ABS_VOLUME);
-    CONST(ABS_MISC);
-    CONST(ABS_MAX);
-    CONST(SW_LID);
-    CONST(SW_TABLET_MODE);
-    CONST(SW_HEADPHONE_INSERT);
-    CONST(SW_MAX);
-    CONST(MSC_SERIAL);
-    CONST(MSC_PULSELED);
-    CONST(MSC_GESTURE);
-    CONST(MSC_RAW);
-    CONST(MSC_SCAN);
-    CONST(MSC_MAX);
-    CONST(LED_NUML);
-    CONST(LED_CAPSL);
-    CONST(LED_SCROLLL);
-    CONST(LED_COMPOSE);
-    CONST(LED_KANA);
-    CONST(LED_SLEEP);
-    CONST(LED_SUSPEND);
-    CONST(LED_MUTE);
-    CONST(LED_MISC);
-    CONST(LED_MAIL);
-    CONST(LED_CHARGING);
-    CONST(LED_MAX);
-    CONST(REP_DELAY);
-    CONST(REP_PERIOD);
-    CONST(REP_MAX);
-    CONST(SND_CLICK);
-    CONST(SND_BELL);
-    CONST(SND_TONE);
-    CONST(SND_MAX);
-    CONST(ID_BUS);
-    CONST(ID_VENDOR);
-    CONST(ID_PRODUCT);
-    CONST(ID_VERSION);
-    CONST(BUS_PCI);
-    CONST(BUS_ISAPNP);
-    CONST(BUS_USB);
-    CONST(BUS_HIL);
-    CONST(BUS_BLUETOOTH);
-    CONST(BUS_VIRTUAL);
-    CONST(BUS_ISA);
-    CONST(BUS_I8042);
-    CONST(BUS_XTKBD);
-    CONST(BUS_RS232);
-    CONST(BUS_GAMEPORT);
-    CONST(BUS_PARPORT);
-    CONST(BUS_AMIGA);
-    CONST(BUS_ADB);
-    CONST(BUS_I2C);
-    CONST(BUS_HOST);
-    CONST(BUS_GSC);
-    CONST(FF_STATUS_STOPPED);
-    CONST(FF_STATUS_PLAYING);
-    CONST(FF_STATUS_MAX);
-    CONST(FF_RUMBLE);
-    CONST(FF_PERIODIC);
-    CONST(FF_CONSTANT);
-    CONST(FF_SPRING);
-    CONST(FF_FRICTION);
-    CONST(FF_DAMPER);
-    CONST(FF_INERTIA);
-    CONST(FF_RAMP);
-    CONST(FF_EFFECT_MIN);
-    CONST(FF_EFFECT_MAX);
-    CONST(FF_SQUARE);
-    CONST(FF_TRIANGLE);
-    CONST(FF_SINE);
-    CONST(FF_SAW_UP);
-    CONST(FF_SAW_DOWN);
-    CONST(FF_CUSTOM);
-    CONST(FF_WAVEFORM_MIN);
-    CONST(FF_WAVEFORM_MAX);
-    CONST(FF_GAIN);
-    CONST(FF_AUTOCENTER);
-    CONST(FF_MAX);
-    CONST(UINPUT_VERSION);
-    CONST(UINPUT_IOCTL_BASE);
-    CONST(EV_UINPUT);
-    CONST(UI_FF_UPLOAD);
-    CONST(UI_FF_ERASE);
-    CONST(UINPUT_MAX_NAME_SIZE);
 #undef CONST
 }
 %}
