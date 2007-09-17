@@ -26,12 +26,8 @@
     $result = PyLong_FromLong($1);
 }
 
-%typemap(in) __u16 {
-    $1 = PyLong_AsUnsignedLong($input);
-}
-%typemap(out) __u16 {
-    $result = PyLong_FromUnsignedLong($1);
-}
+typedef unsigned int __u16;
+typedef signed long __s32;
 
 // This does not create the cleanest wrapper (I'd rather a dynamic-updater with 
 // a custom class), but it works.
@@ -78,16 +74,35 @@ struct timeval
 
 %define STRUCT_UTILS(type)
 %extend type {
-	char *pack() {
+	PyObject* pack() {
 		char* rv = 0;
 		rv = malloc(sizeof(struct type));
 		memcpy(rv, $self, sizeof(struct type));
+		return PyString_FromStringAndSize(rv, sizeof(struct type));
+	}
+	
+	static struct type *unpack(PyObject *data) {
+		struct type *rv = 0;
+		if (!PyString_Check(data) || PyString_Size(data) != sizeof(struct type)) {
+			return NULL;
+		}
+		rv = malloc(sizeof(struct type));
+		memcpy(&rv, PyString_AsString(data), sizeof(struct type));
 		return rv;
 	}
 	
-	size_t __len__() {
+	static size_t length() {
 		return sizeof(struct type);
 	}
+}
+%newobject type::pack;
+%newobject type::unpack;
+%exception type::unpack {
+  $action
+  if (!result) {
+     PyErr_SetString(PyExc_ValueError,"Expecting a string of the correct length");
+     return NULL;
+  }
 }
 %enddef
 
@@ -108,6 +123,29 @@ STRUCT_UTILS(input_id);
 STRUCT_UTILS(timeval);
 STRUCT_UTILS(input_event);
 STRUCT_UTILS(uinput_user_dev);
+
+
+%define RAW_CONST(type, name)
+%init %{
+SWIG_Python_SetConstant(d, #name,SWIG_From_##type((type)(name)));
+%}
+%pythoncode %{
+globals()[`name`] = getattr(_uinput, `name`)
+%}
+%enddef
+
+    RAW_CONST(long, UI_SET_EVBIT);
+    RAW_CONST(long, UI_SET_KEYBIT);
+    RAW_CONST(long, UI_SET_RELBIT);
+    RAW_CONST(long, UI_SET_ABSBIT);
+    RAW_CONST(long, UI_SET_MSCBIT);
+    RAW_CONST(long, UI_SET_LEDBIT);
+    RAW_CONST(long, UI_SET_SNDBIT);
+    RAW_CONST(long, UI_SET_FFBIT);
+    RAW_CONST(long, UI_SET_PHYS);
+    RAW_CONST(long, UI_SET_SWBIT);
+    RAW_CONST(long, UI_DEV_CREATE);
+    RAW_CONST(long, UI_DEV_DESTROY);
 
 %{
 // Some forward declarations
@@ -130,8 +168,7 @@ inituinput(void)
     
     d = PyModule_GetDict(m);
 
-// I use these to dig out the raw value of the structs
-#define CONST(c) SWIG_Python_SetConstant(d, #c,SWIG_From_long((long)(c)))
+/*#define CONST(c) SWIG_Python_SetConstant(d, #c,SWIG_From_long((long)(c)))
 // SWIG gets confused on these
     CONST(UI_SET_EVBIT);
     CONST(UI_SET_KEYBIT);
@@ -145,6 +182,22 @@ inituinput(void)
     CONST(UI_SET_SWBIT);
     CONST(UI_DEV_CREATE);
     CONST(UI_DEV_DESTROY);
-#undef CONST
+#undef CONST*/
 }
 %}
+
+/*%pythoncode %{
+UI_SET_EVBIT = _uinput.UI_SET_EVBIT
+UI_SET_KEYBIT = _uinput.UI_SET_KEYBIT
+UI_SET_RELBIT = _uinput.UI_SET_RELBIT
+UI_SET_ABSBIT = _uinput.UI_SET_ABSBIT
+UI_SET_MSCBIT = _uinput.UI_SET_MSCBIT
+UI_SET_LEDBIT = _uinput.UI_SET_LEDBIT
+UI_SET_SNDBIT = _uinput.UI_SET_SNDBIT
+UI_SET_FFBIT = _uinput.UI_SET_FFBIT
+UI_SET_PHYS = _uinput.UI_SET_PHYS
+UI_SET_SWBIT = _uinput.UI_SET_SWBIT
+UI_DEV_CREATE = _uinput.UI_DEV_CREATE
+UI_DEV_DESTROY = _uinput.UI_DEV_DESTROY
+%}
+*/

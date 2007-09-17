@@ -51,12 +51,60 @@ def uinput_user_dev(name=None, id=None, ff_effects_max=None, absmax=None, absmin
 	if absflat is not None: rv.absflat = absflat
 	return rv
 
+class EvdevStream(object):
+	__slots__ = '_fileobj','__weakref__'
+	def __init__(self, fn, *pargs):
+		if isinstance(fn, int):
+			self._fileobj = os.fdopen(fn, *pargs)
+		elif isinstance(fn, basestring):
+			self._fileobj = open(fn, *pargs)
+		else:
+			self._fileobj = fn
+	
+	def write(self, obj):
+		if hasattr(obj, 'pack'):
+			self._fileobj.write(obj.pack())
+			self._fileobj.flush()
+		else:
+			raise ValueError, "Must have a pack() attribute."
+	
+	def read(self, type):
+		if hasattr(type, '__len__'):
+			s = type.__len__()
+		elif hasattr(type, 'length'):
+			s = type.length()
+		data = self._fileobj.read(s)
+		return type.unpack(data)
+	
+	def ioctl(self, op, *pargs):
+		ioctl(self._fileobj, op, *pargs)
+	
+	def close(self):
+		self._fileobj.close()
+	
+	def flush(self):
+		# Should be redundent
+		self._fileobj.flush()
+	
+	def iter(self,type):
+		"""
+		Like iter(), but needs an initial type. To change the type, use .send() 
+		(PEP 342).
+		"""
+		while True: # Ends when something raises an error
+			ntype = yield self.read(type)
+			if ntype is not None: type = ntype
+	
+	def __getattr__(self, attr):
+		return getattr(self._fileobj, attr)
+
 if __name__ == '__main__':
 	uud = uinput_user_dev(name="Saitek Magic Bus", ff_effects_max=0, absmax=[1]*(uinput.ABS_MAX+1))
 	print repr(uud)
 	print uud.__dict__
 	print hex(int(uud.this))
 	print dir(uud.this)
+	print dir(uinput.timeval)
 	print uud.absmax
 	print uud.absmin
-	
+	print repr(input_event().pack())
