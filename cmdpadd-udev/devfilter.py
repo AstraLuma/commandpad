@@ -84,37 +84,39 @@ def DevFilter(name, vendor, product, version, **kwargs):
 			__dev_version__ = version
 			__events = events
 			__events__ = lambda self,cur=None: self.__events
-			__iter__ = callable
-			__call__ = callable
+			__func = staticmethod(func)
+			def __iter__(self):
+				return self.__func()
+			def __call__(self):
+				return self.__func()
 		_DevFilter.__name__ = func.__name__
 		#_DevFilter.__doc__ = func.__doc__
 		_DevFilter.__module__ = func.__module__
 		return _DevFilter()
 	return _
 
-def main(filter, device):
+def main(evfilter, idevice, odevice):
 	"""main(generator, string|file|something) -> None
 	Actually does the work.
 	"""
-	with udev.UidevStream(device, 'w') as uidev:
-		uidev.write(udev.uinput_user_dev(name=filter.__dev_name__,
+	with udev.UidevStream(odevice, 'w') as uidev:
+		uidev.write(udev.uinput_user_dev(name=evfilter.__dev_name__,
 			id=udev.input_id(
-				bustype=filter.__dev_bus__,
-				vendor=filter.__dev_vendor__, 
-				product=filter.__dev_product__,
-				version=filter.__dev_version__)))
+				bustype=evfilter.__dev_bus__,
+				vendor=evfilter.__dev_vendor__, 
+				product=evfilter.__dev_product__,
+				version=evfilter.__dev_version__)))
 		SETBITS = {
 			uinput.EV_ABS  : uinput.UI_SET_ABSBIT,
 			uinput.EV_FF   : uinput.UI_SET_FFBIT,
 			uinput.EV_KEY  : uinput.UI_SET_KEYBIT,
 			uinput.EV_LED  : uinput.UI_SET_LEDBIT,
 			uinput.EV_MSC  : uinput.UI_SET_MSCBIT,
-			uinput.EV_PHYS : uinput.UI_SET_PHYS,
 			uinput.EV_REL  : uinput.UI_SET_RELBIT,
 			uinput.EV_SND  : uinput.UI_SET_SNDBIT,
 			uinput.EV_SW   : uinput.UI_SET_SWBIT,
 			}
-		for etype, events in filter.__events__().iteritems():
+		for etype, events in evfilter.__events__().iteritems():
 			uidev.ioctl(uinput.UI_SET_EVBIT, etype)
 			set = SETBITS[etype]
 			for ev in events:
@@ -122,9 +124,12 @@ def main(filter, device):
 		uidev.ioctl(uinput.UI_DEV_CREATE)
 		
 		with uidev:
-			_run_event = uidev.write # In case it becomes more complex
-			with udev.EvdevStream(findpads.getEventFiles().next(), 'r') as rdev:
-				fiter = iter(filter)
+			def _run_event(ev):
+				if ev is not None:
+					uidev.write(ev)
+			with udev.EvdevStream(idevice, 'r') as rdev:
+				fiter = iter(evfilter)
+				fiter.next() # Get to the first yield
 				try:
 					for event in rdev.iter(uinput.input_event):
 						try:

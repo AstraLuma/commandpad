@@ -26,16 +26,18 @@ def finddev():
 
 # Initialize
 @DevFilter("Saitek Magic Bus", 0x06A3, 0x8000, 0x0111,
-	KEY=MAPPING.itervalues())
+	KEY=MAPPING.iterkeys())
 def KeyFilter():
 		event = yield
-		while True:
-			if event.code in MAPPING:
+		while event is not None:
+			nev = None
+			if event.type == uinput.EV_KEY and event.code in MAPPING:
 				print "%s->%s" % (event.code, MAPPING[event.code])
 				event.code = MAPPING[event.code]
-				# Send an event
-				event = yield event
+				nev = event
+			# Send an event
+			event = yield nev
 
 findpads.init()
-main(KeyFilter, finddev())
+main(KeyFilter, findpads.getEventFiles().next(), finddev())
 

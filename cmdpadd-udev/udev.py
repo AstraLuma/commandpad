@@ -16,7 +16,7 @@ def FindUinput(*others):
 		if os.path.exists(dev) and stat.S_ISCHR(os.stat(dev).st_mode):
 			return dev
 	else:
-		raise ValueError, "Ran out of options"
+		raise ValueError, "Ran out of devices"
 
 def input_id(bustype=None, vendor=None, product=None, version=None):
 	rv = uinput.input_id()
@@ -99,6 +99,9 @@ class EvdevStream(object):
 		self._fileobj.__enter__()
 		return self
 	
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		self._fileobj.__exit__(exc_type, exc_val, exc_tb)
+	
 	def __getattr__(self, attr):
 		return getattr(self._fileobj, attr)
 
@@ -106,8 +109,11 @@ class UidevStream(EvdevStream):
 	"""
 	Just like EvdevStream, but with some convenience methods for uinput.
 	"""
-	__slots__ = '_devcreated',
-	_devcreated = False
+	__slots__ = '_devcreated','_devcreatable'
+	def __init__(self, fn, *pargs):
+		super(UidevStream, self).__init__(fn, *pargs)
+		self._devcreated = False
+		self._devcreatable = False
 	def ioctl(self, op, *pargs):
 		rv = super(UidevStream, self).ioctl(op, *pargs)
 		if op == uinput.UI_DEV_CREATE:
@@ -116,11 +122,20 @@ class UidevStream(EvdevStream):
 			self._devcreated = False
 		return rv
 	
+	def close(self):
+		super(UidevStream, self).close()
+		self._devcreatable = False
+		self._devcreated = False
+	
+	def write(self, obj):
+		super(UidevStream, self).write(obj)
+		if isinstance(obj, uinput.uinput_user_dev): self._devcreatable = True
+	
 	def __enter__(self):
-		if self._fileobj.closed:
-			super(UidevStream, self).__enter__()
-		elif not self._devcreated:
+		if self._devcreatable and not self._devcreated:
 			self.ioctl(uinput.UI_DEV_CREATE)
+		else:
+			super(UidevStream, self).__enter__()
 		return self
 	
 	def __exit__(self, exc_type, exc_val, exc_tb):
