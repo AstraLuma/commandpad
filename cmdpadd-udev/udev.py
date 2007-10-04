@@ -16,7 +16,7 @@ def FindUinput(*others):
 		if os.path.exists(dev) and stat.S_ISCHR(os.stat(dev).st_mode):
 			return dev
 	else:
-		return None
+		raise ValueError, "Ran out of options"
 
 def input_id(bustype=None, vendor=None, product=None, version=None):
 	rv = uinput.input_id()
@@ -95,8 +95,39 @@ class EvdevStream(object):
 			ntype = yield self.read(type)
 			if ntype is not None: type = ntype
 	
+	def __enter__(self):
+		self._fileobj.__enter__()
+		return self
+	
 	def __getattr__(self, attr):
 		return getattr(self._fileobj, attr)
+
+class UidevStream(EvdevStream):
+	"""
+	Just like EvdevStream, but with some convenience methods for uinput.
+	"""
+	__slots__ = '_devcreated',
+	_devcreated = False
+	def ioctl(self, op, *pargs):
+		rv = super(UidevStream, self).ioctl(op, *pargs)
+		if op == uinput.UI_DEV_CREATE:
+			self._devcreated = True
+		elif op == uinput.UI_DEV_DESTROY:
+			self._devcreated = False
+		return rv
+	
+	def __enter__(self):
+		if self._fileobj.closed:
+			super(UidevStream, self).__enter__()
+		elif not self._devcreated:
+			self.ioctl(uinput.UI_DEV_CREATE)
+		return self
+	
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		if self._devcreated:
+			self.ioctl(uinput.UI_DEV_DESTROY)
+		else:
+			super(UidevStream, self).__exit__(exc_type, exc_val, exc_tb)
 
 if __name__ == '__main__':
 	uud = uinput_user_dev(name="Saitek Magic Bus", ff_effects_max=0, absmax=[1]*(uinput.ABS_MAX+1))

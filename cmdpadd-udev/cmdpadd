@@ -1,44 +1,41 @@
 #!/usr/bin/python
+
 import uinput, udev, sys
+from devfilter import DevFilter, main
 from commandpad import findpads
 
 MAPPING = {
-	uinput.BTN_A: uinput.KEY_1,
-	uinput.BTN_B: uinput.KEY_2,
-	uinput.BTN_C: uinput.KEY_3,
-	uinput.BTN_X: uinput.KEY_4,
-	uinput.BTN_Y: uinput.KEY_5,
-	uinput.BTN_Z: uinput.KEY_6,
-	uinput.BTN_TL: uinput.KEY_7,
-	uinput.BTN_TR: uinput.KEY_8,
-	uinput.BTN_TL2: uinput.KEY_9,
-	uinput.BTN_TR2: uinput.KEY_LEFTMETA,
-	uinput.BTN_SELECT: uinput.KEY_RIGHTMETA,
+	uinput.BTN_A: uinput.KEY_F13,
+	uinput.BTN_B: uinput.KEY_F14,
+	uinput.BTN_C: uinput.KEY_F15,
+	uinput.BTN_X: uinput.KEY_F16,
+	uinput.BTN_Y: uinput.KEY_F17,
+	uinput.BTN_Z: uinput.KEY_F18,
+	uinput.BTN_TL: uinput.KEY_F19,
+	uinput.BTN_TR: uinput.KEY_F20,
+	uinput.BTN_TL2: uinput.KEY_F21,
+	uinput.BTN_TR2: uinput.KEY_F22,
+	uinput.BTN_SELECT: uinput.KEY_LINEFEED,
 }
 
-findpads.init()
+def finddev():
+	rv = udev.FindUinput()
+	if rv is None:
+		raise ValueError, "Can't find device"
+	return rv
 
 # Initialize
-uidev = udev.EvdevStream(udev.FindUinput(), 'w')
-try:
-	uidev.write(udev.uinput_user_dev(name="Saitek Magic Bus",
-		id=udev.input_id(bustype=0,vendor=0x06A3, product=0x8000, version=0x0111)))
-	uidev.ioctl(uinput.UI_SET_EVBIT, uinput.EV_KEY)
-	for key in MAPPING.itervalues():
-		uidev.ioctl(uinput.UI_SET_KEYBIT, key)
-	uidev.ioctl(uinput.UI_DEV_CREATE)
-	try:
-		rdev = udev.EvdevStream(findpads.getEventFiles().next(), 'r')
-		try:
-			for event in rdev.iter(uinput.input_event):
-				if event.code in MAPPING:
-					event.code = MAPPING[event.code]
-					# Send an event
-					uidev.write(event)
-		finally:
-			rdev.close()
-	finally:
-# Uninit
-		uidev.ioctl(uinput.UI_DEV_DESTROY)
-finally:
-	uidev.close()
+@DevFilter("Saitek Magic Bus", 0x06A3, 0x8000, 0x0111,
+	KEY=MAPPING.itervalues())
+def KeyFilter():
+		event = yield
+		while True:
+			if event.code in MAPPING:
+				print "%s->%s" % (event.code, MAPPING[event.code])
+				event.code = MAPPING[event.code]
+				# Send an event
+				event = yield event
+
+findpads.init()
+main(KeyFilter, finddev())
+

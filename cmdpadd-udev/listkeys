@@ -1,0 +1,12 @@
+#!/usr/bin/python
+#-*- coding: utf-8 -*-
+"""
+Lists the key constants
+"""
+import uinput
+
+names = [key for key in dir(uinput) if key.startswith('KEY_')]
+size = len(max(names, key=len))+1
+consts = sorted([(getattr(uinput,k),k) for k in names], cmp=lambda a,b: cmp(a[0],b[0]))
+for v,k in consts:
+	print "%s%s = %r" % (k, " "*(size-len(k)),v)
