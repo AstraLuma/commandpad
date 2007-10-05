@@ -133,6 +133,14 @@ STRUCT_UTILS(timeval);
 STRUCT_UTILS(input_event);
 STRUCT_UTILS(uinput_user_dev);
 
+%extend timeval {
+	PyObject* __float__() {
+		double rv = 0.0;
+		rv += $self->tv_sec;
+		rv += ((double)$self->tv_usec) / 1e6;
+		return PyFloat_FromDouble(rv);
+	}
+}
 
 %define RAW_CONST(type, name)
 %init %{

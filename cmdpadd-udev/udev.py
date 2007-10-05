@@ -28,6 +28,9 @@ def input_id(bustype=None, vendor=None, product=None, version=None):
 
 def timeval(sec=None, usec=None):
 	rv = uinput.timeval()
+	if isinstance(sec, float):
+		usec = int((sec - int(sec)) * 1e6)
+		sec = int(sec)
 	if sec is not None: rv.sec = sec
 	if usec is not None: rv.usec = usec
 	return rv

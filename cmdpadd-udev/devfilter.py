@@ -51,6 +51,11 @@ class Filter(object):
 		while True:
 			if self.test(event):
 				event = yield self.filter(event)
+	def __call__(self):
+		"""
+		For compatibiltiy with generator functions.
+		"""
+		return iter(self)
 
 def DevFilter(name, vendor, product, version, **kwargs):
 	"""
@@ -78,7 +83,7 @@ def DevFilter(name, vendor, product, version, **kwargs):
 	def _(func):
 		class _DevFilter(Filter):
 			__dev_name__ = name
-			__dev_bus__ = 0
+			__dev_bus__ = uinput.BUS_VIRTUAL
 			__dev_vendor__ = vendor
 			__dev_product__ = product
 			__dev_version__ = version
@@ -86,8 +91,6 @@ def DevFilter(name, vendor, product, version, **kwargs):
 			__events__ = lambda self,cur=None: self.__events
 			__func = staticmethod(func)
 			def __iter__(self):
-				return self.__func()
-			def __call__(self):
 				return self.__func()
 		_DevFilter.__name__ = func.__name__
 		#_DevFilter.__doc__ = func.__doc__
@@ -99,8 +102,12 @@ def main(evfilter, idevice, odevice, eclass=uinput.input_event):
 	"""main(generator, string|file|something) -> None
 	Actually does the work.
 	"""
+	global getidev, getodev
 	with udev.UidevStream(odevice, 'w') as uidev:
 		with udev.EvdevStream(idevice, 'r') as rdev:
+			getidev = lambda: rdev
+			getodev = lambda: uidev
+			
 			uidev.write(udev.uinput_user_dev(name=evfilter.__dev_name__,
 				id=udev.input_id(
 					bustype=evfilter.__dev_bus__,
@@ -119,10 +126,12 @@ def main(evfilter, idevice, odevice, eclass=uinput.input_event):
 				}
 			for etype, events in evfilter.__events__(rdev.dev_bits()).iteritems():
 				uidev.ioctl(uinput.UI_SET_EVBIT, etype)
-				set = SETBITS[etype]
-				for ev in events:
-					uidev.ioctl(set, ev)
-			uidev.ioctl(uinput.UI_DEV_CREATE)
+				if etype in SETBITS:
+					set = SETBITS[etype]
+					for ev in events:
+						uidev.ioctl(set, ev)
+				elif len(events) != 0:
+					print "Warning:Couldn't set events for type %i" % etype
 			
 			fiter = iter(evfilter)
 			moreinit = fiter.next() # Get to the first yield, its result is more init
@@ -131,8 +140,13 @@ def main(evfilter, idevice, odevice, eclass=uinput.input_event):
 					uidev.ioctl(*i)
 			with uidev:
 				def _run_event(ev):
-					if ev is not None:
+					if ev is None:
+						return
+					elif hasattr(ev, '__iter__'):
+						map(uidev.write, ev)
+					else:
 						uidev.write(ev)
+					uidev.write(udev.input_event(type=uinput.EV_SYN))
 				try:
 					for event in rdev.iter(eclass):
 						try:
