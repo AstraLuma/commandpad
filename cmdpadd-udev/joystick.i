@@ -1,5 +1,5 @@
 // vim:syn=c
-%module uinput
+%module joystick
 %feature("autodoc", "1");
 
 #ifndef SWIGPYTHON
@@ -8,11 +8,10 @@
 
 %{
 /* Put headers and other declarations here */
-#include <linux/input.h>
-#include <linux/uinput.h>
+#include <linux/joystick.h>
 %}
 
-%typemap(in) __time_t {
+/*%typemap(in) __time_t {
     $1 = PyLong_AsLong($input);
 }
 %typemap(out) __time_t {
@@ -24,18 +23,14 @@
 }
 %typemap(out) __suseconds_t {
     $result = PyLong_FromLong($1);
-}
+}*/
 
-%typemap(in) __u16 {
-    $1 = PyLong_AsUnsignedLong($input);
-}
-%typemap(out) __u16 {
-	PyObject * spam = 0;
-	spam = PyLong_FromUnsignedLong($1);
-    $result = PyLong_FromUnsignedLong($1);
-}
-
+typedef signed char __s8;
+typedef unsigned char __u8;
+typedef signed int __s16;
+typedef unsigned int __u16;
 typedef signed long int __s32;
+typedef unsigned long int __u32;
 
 // This does not create the cleanest wrapper (I'd rather a dynamic-updater with 
 // a custom class), but it works.
@@ -71,14 +66,7 @@ typedef signed long int __s32;
   }
 }
 
-%include <linux/input.h>
-%include <linux/uinput.h>
-
-struct timeval
-{
-    __time_t tv_sec;		/* Seconds.  */
-    __suseconds_t tv_usec;	/* Microseconds.  */
-};
+%include <linux/joystick.h>
 
 %define STRUCT_UTILS(type)
 %extend type {
@@ -115,89 +103,42 @@ struct timeval
 }
 %enddef
 
-STRUCT_UTILS(ff_condition_effect);
-STRUCT_UTILS(ff_constant_effect);
-STRUCT_UTILS(ff_effect);
-// ff_effect_u is a union in ff_effect
-STRUCT_UTILS(ff_envelope);
-STRUCT_UTILS(ff_periodic_effect);
-STRUCT_UTILS(ff_ramp_effect);
-STRUCT_UTILS(ff_replay);
-STRUCT_UTILS(ff_rumble_effect);
-STRUCT_UTILS(ff_trigger);
-STRUCT_UTILS(input_absinfo);
-STRUCT_UTILS(uinput_ff_erase);
-STRUCT_UTILS(uinput_ff_upload);
-STRUCT_UTILS(input_id);
-STRUCT_UTILS(timeval);
-STRUCT_UTILS(input_event);
-STRUCT_UTILS(uinput_user_dev);
-
+STRUCT_UTILS(JS_DATA_SAVE_TYPE_32);
+STRUCT_UTILS(JS_DATA_SAVE_TYPE_64);
+STRUCT_UTILS(JS_DATA_TYPE);
+STRUCT_UTILS(js_corr);
+STRUCT_UTILS(js_event);
 
 %define RAW_CONST(type, name)
 %init %{
 SWIG_Python_SetConstant(d, #name,SWIG_From_##type((type)(name)));
 %}
 %pythoncode %{
-globals()[`name`] = getattr(_uinput, `name`)
+globals()[`name`] = getattr(_joystick, `name`)
 %}
 %enddef
 
-RAW_CONST(long, UI_SET_EVBIT);
-RAW_CONST(long, UI_SET_KEYBIT);
-RAW_CONST(long, UI_SET_RELBIT);
-RAW_CONST(long, UI_SET_ABSBIT);
-RAW_CONST(long, UI_SET_MSCBIT);
-RAW_CONST(long, UI_SET_LEDBIT);
-RAW_CONST(long, UI_SET_SNDBIT);
-RAW_CONST(long, UI_SET_FFBIT);
-RAW_CONST(long, UI_SET_PHYS);
-RAW_CONST(long, UI_SET_SWBIT);
-RAW_CONST(long, UI_DEV_CREATE);
-RAW_CONST(long, UI_DEV_DESTROY);
-RAW_CONST(long, EVIOCGID);
-RAW_CONST(long, EVIOCGVERSION);
+RAW_CONST(long, JSIOCGVERSION);
 
+RAW_CONST(long, JSIOCGAXES);
+RAW_CONST(long, JSIOCGBUTTONS);
 
-%define MACRO(type, name, cargs, argnames)
-type _##name cargs;
+RAW_CONST(long, JSIOCSCORR);
+RAW_CONST(long, JSIOCGCORR);
+
+RAW_CONST(long, JSIOCSAXMAP);
+RAW_CONST(long, JSIOCGAXMAP);
+RAW_CONST(long, JSIOCSBTNMAP);
+RAW_CONST(long, JSIOCGBTNMAP);
+
+RAW_CONST(long, JS_RETURN);
+
+long _JSIOCGNAME(long len);
+
 %pythoncode %{
-def _##name argnames :
-	"A C Macro. Really lame, I know."
-	return _uinput._##name argnames
-globals()[`name`] = _##name
-%}
-%{
-type _##name cargs {
-	return name argnames;
-}
-%}
-%enddef
-
-MACRO(long, EVIOCGNAME, (long len), (len));
-MACRO(long, EVIOCGPHYS, (long len), (len));
-MACRO(long, EVIOCGUNIQ, (long len), (len));
-
-MACRO(long, EVIOCGKEY, (long len), (len));
-MACRO(long, EVIOCGLED, (long len), (len));
-MACRO(long, EVIOCGSND, (long len), (len));
-MACRO(long, EVIOCGSW, (long len), (len));
-
-//MACRO(long, EVIOCGBIT, (long ev, long len), (ev, len));
-MACRO(long, EVIOCGABS, (long abs), (abs));
-MACRO(long, EVIOCSABS, (long abs), (abs));
-
-long _EVIOCGBIT(long ev, long len);
-%pythoncode %{
-def _EVIOCGBIT(ev,len):
-	"A C Macro. Really lame, I know."
-	return _uinput._EVIOCGBIT(ev,len)
-globals()["EVIOCGBIT"] = _EVIOCGBIT
-%}
-%{
-long _EVIOCGBIT(long ev, long len) {
-	return EVIOCGBIT(ev, len);
-}
+def JSIOCGNAME(*args):
+  """JSIOCGNAME(long len) -> long"""
+  return _joystick._JSIOCGNAME(*args)
 %}
 
 %{
@@ -212,11 +153,10 @@ static PyMethodDef SwigMethods[];
 PyMODINIT_FUNC
 inituinput(void)
 {
-    PyObject *m;
-    m = Py_InitModule("uinput",SwigMethods);
-    if (m == NULL)
-       return;
     SWIG_init();
 }
-%}
 
+long _JSIOCGNAME(long len) {
+	return JSIOCGNAME(len);
+}
+%}

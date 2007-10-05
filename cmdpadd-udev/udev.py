@@ -2,7 +2,7 @@
 """
 Handles quite a bit of the back to uinput.
 """
-import sys, uinput, os, stat
+import sys, uinput, os, stat, struct, array
 from fcntl import ioctl
 
 UINPUT_DEVICES = ['/dev/uinput', '/dev/misc/uinput', '/dev/input/uinput']
@@ -104,6 +104,65 @@ class EvdevStream(object):
 	
 	def __getattr__(self, attr):
 		return getattr(self._fileobj, attr)
+	
+	# Convenience functions to get info on the device
+	def dev_id(self):
+		rv = array.array('H', [0]*4)
+		self.ioctl(uinput.EVIOCGID,rv, True)
+		bits = rv
+		return input_id(
+				bustype=bits[uinput.ID_BUS],
+				vendor=bits[uinput.ID_VENDOR], 
+				product=bits[uinput.ID_PRODUCT],
+				version=bits[uinput.ID_VERSION])
+	
+	def dev_version(self):
+		rv = array.array("i", [0])
+		self.ioctl(uinput.EVIOCGVERSION,rv, True)
+		return rv[0]
+	
+	def dev_name(self):
+		rv = array.array("c", ['\0']*256)
+		self.ioctl(uinput.EVIOCGNAME(len(rv)), rv, True)
+		return "".join(rv).rstrip('\0')
+	
+	def dev_bits(self):
+		import math
+		BITS_PER_LONG = int(math.ceil(math.log(sys.maxint) / math.log(2))) + 1
+		NBITS = lambda x:  (x-1) // BITS_PER_LONG + 1
+		OFF = lambda x: x % BITS_PER_LONG
+		BIT = lambda x: 1L << OFF(X)
+		LONG = lambda x: x // BITS_PER_LONG
+		test_bit = lambda b, array: (array[LONG(b)] >> OFF(b)) & 1
+		rvbits = {}
+		sfmt = 'L', [0] * NBITS(uinput.KEY_MAX)
+		bit = [None] * uinput.EV_MAX
+		buf = array.array(*sfmt)
+		self.ioctl(uinput.EVIOCGBIT(0, uinput.EV_MAX), buf, True)
+		bit[0] = list(buf)
+		for i in xrange(1,uinput.EV_MAX):
+			if test_bit(i, bit[0]):
+				buf = array.array(*sfmt)
+				try:
+					self.ioctl(uinput.EVIOCGBIT(i, uinput.KEY_MAX), buf, True);
+				except: pass
+				bit[i] = list(buf)
+				rvbits[i] = [j for j in xrange(uinput.KEY_MAX) if test_bit(j, bit[i])]
+		return rvbits
+	
+	def dev_ranges(self):
+		"""
+		The values of the dict are in this order:
+			value, min, max, fuzz, flat
+		"""
+		bits = self.dev_bits()
+		if uinput.EV_ABS not in bits: return {}
+		rv = {}
+		for j in bits[uinput.EV_ABS]:
+			abs = array.array("i", [0]*5)
+			self.ioctl(uinput.EVIOCGABS(j), abs, True)
+			rv[j] = list(abs)
+		return rv
 
 class UidevStream(EvdevStream):
 	"""

@@ -95,43 +95,46 @@ def DevFilter(name, vendor, product, version, **kwargs):
 		return _DevFilter()
 	return _
 
-def main(evfilter, idevice, odevice):
+def main(evfilter, idevice, odevice, eclass=uinput.input_event):
 	"""main(generator, string|file|something) -> None
 	Actually does the work.
 	"""
 	with udev.UidevStream(odevice, 'w') as uidev:
-		uidev.write(udev.uinput_user_dev(name=evfilter.__dev_name__,
-			id=udev.input_id(
-				bustype=evfilter.__dev_bus__,
-				vendor=evfilter.__dev_vendor__, 
-				product=evfilter.__dev_product__,
-				version=evfilter.__dev_version__)))
-		SETBITS = {
-			uinput.EV_ABS  : uinput.UI_SET_ABSBIT,
-			uinput.EV_FF   : uinput.UI_SET_FFBIT,
-			uinput.EV_KEY  : uinput.UI_SET_KEYBIT,
-			uinput.EV_LED  : uinput.UI_SET_LEDBIT,
-			uinput.EV_MSC  : uinput.UI_SET_MSCBIT,
-			uinput.EV_REL  : uinput.UI_SET_RELBIT,
-			uinput.EV_SND  : uinput.UI_SET_SNDBIT,
-			uinput.EV_SW   : uinput.UI_SET_SWBIT,
-			}
-		for etype, events in evfilter.__events__().iteritems():
-			uidev.ioctl(uinput.UI_SET_EVBIT, etype)
-			set = SETBITS[etype]
-			for ev in events:
-				uidev.ioctl(set, ev)
-		uidev.ioctl(uinput.UI_DEV_CREATE)
-		
-		with uidev:
-			def _run_event(ev):
-				if ev is not None:
-					uidev.write(ev)
-			with udev.EvdevStream(idevice, 'r') as rdev:
-				fiter = iter(evfilter)
-				fiter.next() # Get to the first yield
+		with udev.EvdevStream(idevice, 'r') as rdev:
+			uidev.write(udev.uinput_user_dev(name=evfilter.__dev_name__,
+				id=udev.input_id(
+					bustype=evfilter.__dev_bus__,
+					vendor=evfilter.__dev_vendor__, 
+					product=evfilter.__dev_product__,
+					version=evfilter.__dev_version__)))
+			SETBITS = {
+				uinput.EV_ABS  : uinput.UI_SET_ABSBIT,
+				uinput.EV_FF   : uinput.UI_SET_FFBIT,
+				uinput.EV_KEY  : uinput.UI_SET_KEYBIT,
+				uinput.EV_LED  : uinput.UI_SET_LEDBIT,
+				uinput.EV_MSC  : uinput.UI_SET_MSCBIT,
+				uinput.EV_REL  : uinput.UI_SET_RELBIT,
+				uinput.EV_SND  : uinput.UI_SET_SNDBIT,
+				uinput.EV_SW   : uinput.UI_SET_SWBIT,
+				}
+			for etype, events in evfilter.__events__(rdev.dev_bits()).iteritems():
+				uidev.ioctl(uinput.UI_SET_EVBIT, etype)
+				set = SETBITS[etype]
+				for ev in events:
+					uidev.ioctl(set, ev)
+			uidev.ioctl(uinput.UI_DEV_CREATE)
+			
+			fiter = iter(evfilter)
+			moreinit = fiter.next() # Get to the first yield, its result is more init
+			if moreinit is not None:
+				for i in moreinit:
+					uidev.ioctl(*i)
+			with uidev:
+				def _run_event(ev):
+					if ev is not None:
+						uidev.write(ev)
 				try:
-					for event in rdev.iter(uinput.input_event):
+					for event in rdev.iter(eclass):
 						try:
 							nev = fiter.send(event)
 						except StopIteration:

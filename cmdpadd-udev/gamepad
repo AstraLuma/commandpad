@@ -1,0 +1,49 @@
+#!/usr/bin/python
+"""
+An alternative filter, for my Saitek gamepad.
+"""
+import uinput, udev, sys, array
+from devfilter import DevFilter, main
+
+# Buttons
+BTN1, BTN2, BTN3, BTN4, BTN5, BTN6, BTN7, BTN8, BTN_BLACK, BTN_SILVER, BTN_FPS, BTN_ANALOG = range(uinput.BTN_TRIGGER, uinput.BTN_BASE6+1)
+# Axes
+LEFT_X, LEFT_Y = uinput.ABS_X, uinput.ABS_Y
+RIGHT_X, RIGHT_Y = uinput.ABS_THROTTLE, uinput.ABS_RUDDER
+POV_X, POV_Y = uinput.ABS_HAT0X, uinput.ABS_HAT0Y
+
+# Initialize
+@DevFilter("Saitek Magic Bus", 0x06A3, 0x5F0D, 0x0110,
+	KEY=[BTN1, BTN2, BTN3, BTN4, BTN5, BTN6, BTN7, BTN8, BTN_BLACK, BTN_SILVER, BTN_FPS, BTN_ANALOG],
+	ABS=[LEFT_X, LEFT_Y, RIGHT_X, RIGHT_Y, POV_X, POV_Y]
+	)
+def JoyFilter():
+		fps_mode = False
+		event = yield [
+			(uinput.EVIOCSABS( 0), array.array('i', [0,  0, 255, 0, 15])),
+			(uinput.EVIOCSABS( 1), array.array('i', [0,  0, 255, 0, 15])), 
+			(uinput.EVIOCSABS( 6), array.array('i', [0,  0, 255, 0, 15])), 
+			(uinput.EVIOCSABS( 7), array.array('i', [0,  0, 255, 0, 15])), 
+			(uinput.EVIOCSABS(16), array.array('i', [0, -1,   1, 0,  0])), 
+			(uinput.EVIOCSABS(17), array.array('i', [0, -1,   1, 0,  0])),
+			]
+		while event is not None:
+			nev = None
+			if event.type == 0 and event.code == 0 and event.value == 0:
+				event = yield
+				continue
+			print event.time, event.type, event.code, event.value
+			if event.type == uinput.EV_KEY and event.code == BTN_FPS and event.value:
+				fps_mode = not fps_mode
+				print "FPS mode:", "on" if fps_mode else "off"
+			elif event.type == uinput.EV_KEY and event.code == BTN_ANALOG:
+				print "Analog button"
+			elif fps_mode:
+				nev = uinput.input_event()
+				nev = None
+			else:
+				nev = event
+			event = yield nev
+
+main(JoyFilter, '/dev/input/event8', udev.FindUinput())
+
