@@ -1,21 +1,18 @@
 BUILD_BIN=build/lib.linux-i686-2.5
-CMODULES=_uinput.so _joystick.so linuxkd.so
-GENPYMODULES=$(filter %.py,$(patsubst _%.so,%py,$(CMODULES)))
+CMODULES=_uinput.so _joystick.so
+GENPYMODULES=$(patsubst _%.so,%py,$(CMODULES))
 LOCALPYMODULES=$(filter-out setup.py $(GENPYMODULES),$(wildcard *.py))
 PYMODULES=$(LOCALPYMODULES) commandpad/*.py
 DOCS=$(filter %.html,$(patsubst %.so,%.html,$(CMODULES)) $(patsubst _%.so,%.html,$(CMODULES)) $(patsubst %.py,%.html,$(LOCALPYMODULES)))
 
 all : $(CMODULES) uinput-test docs pyc pyo
 
-_uinput.so : uinput.i joystick.i linuxkd.c setup.py
+_uinput.so : uinput.i joystick.i setup.py
 	python setup.py build
 	cp $(BUILD_BIN)/uinput.so _uinput.so
 
 _joystick.so : _uinput.so
 	cp $(BUILD_BIN)/joystick.so $@
-
-linuxkd.so : _uinput.so
-	cp $(BUILD_BIN)/linuxkd.so $@
 
 pyc : $(patsubst %.py,%.pyc,$(PYMODULES))
 pyo : $(patsubst %.py,%.pyo,$(PYMODULES))
