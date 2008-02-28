@@ -12,7 +12,7 @@ __all__ = 'LEDs',
 class LEDs(object):
 	__slots__ = '_fd','__weakref__'
 	def __init__(self):
-		self._fd = os.open('...', os.O_NOCTTY)
+		self._fd = os.open('/dev/console', os.O_NOCTTY)
 	
 	def __del__(self):
 		os.close(self._fd)
@@ -39,5 +39,14 @@ class LEDs(object):
 	caps   = property(getCaps  , setCaps  , doc="""The state of the caps lock LED""")
 	num    = property(getNum   , setNum   , doc="""The state of the num lock LED""")
 	scroll = property(getScroll, setScroll, doc="""The state of the scroll lock LED""")
-	
+
+if __name__ == '__main__':
+	from sys import stdin
+	lights = LEDs()
+	try:
+		while True:
+			c = stdin.read(1)
+			if c == 's': lights.scroll = True
+			elif c == 'c': lights.scroll = False
+	except KeyboardInterrupt: pass
 
