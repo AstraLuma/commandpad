@@ -151,6 +151,7 @@ class AnalogRepeat(object):
 		sys.stdout.flush()
 
 class KeyRepeat(object):
+	# Has to use a square-wave-type method
 	def __init__(self, type, pos, neg, value):
 		self._type = type
 		self._codes = [pos, neg]

@@ -1,43 +1,53 @@
-all : _uinput.so uinput-test docs
+BUILD_BIN=build/lib.linux-i686-2.5
+CMODULES=_uinput.so _joystick.so linuxkd.so
+GENPYMODULES=$(filter %.py,$(patsubst _%.so,%py,$(CMODULES)))
+LOCALPYMODULES=$(filter-out setup.py $(GENPYMODULES),$(wildcard *.py))
+PYMODULES=$(LOCALPYMODULES) commandpad/*.py
+DOCS=$(filter %.html,$(patsubst %.so,%.html,$(CMODULES)) $(patsubst _%.so,%.html,$(CMODULES)) $(patsubst %.py,%.html,$(LOCALPYMODULES)))
 
-_uinput.so : uinput.i joystick.i setup.py
+all : $(CMODULES) uinput-test docs pyc pyo
+
+_uinput.so : uinput.i joystick.i linuxkd.c setup.py
 	python setup.py build
-	cp build/lib.linux-i686-2.5/uinput.so _uinput.so
+	cp $(BUILD_BIN)/uinput.so _uinput.so
 
 _joystick.so : _uinput.so
-	cp build/lib.linux-i686-2.5/joystick.so _joystick.so
+	cp $(BUILD_BIN)/joystick.so $@
 
-docs : uinput.html _uinput.html joystick.html _joystick.html
+linuxkd.so : _uinput.so
+	cp $(BUILD_BIN)/linuxkd.so $@
 
-uinput.html : _uinput.so
-	pydoc -w uinput
+pyc : $(patsubst %.py,%.pyc,$(PYMODULES))
+pyo : $(patsubst %.py,%.pyo,$(PYMODULES))
 
-_uinput.html : _uinput.so
-	pydoc -w _uinput
+%.pyc : %.py
+	python -m py_compile $<
 
-joystick.html : _joystick.so
-	pydoc -w joystick
+%.pyo : %.py
+	python -Om py_compile $<
 
-_joystick.html : _joystick.so
-	pydoc -w _joystick
+docs : $(DOCS)
 
-.PHONY : all clean test docs
+%.html : %.py _%.so
+	pydoc -w $*
+
+%.html : %.py
+	pydoc -w $*
+
+%.html : %.so
+	pydoc -w $*
+
+.PHONY : all clean test docs pyc pyo
 
 clean :
-	-rm -f _uinput.so
-	-rm -f _joystick.so
 	-rm -rf build
-	-rm -f uinput_wrap.c
-	-rm -f uinput.html
-	-rm -f _uinput.html
-	-rm -f joystick_wrap.c
-	-rm -f joystick.html
-	-rm -f _joystick.html
+	-rm -f $(CMODULES)
+	-rm -f $(DOCS)
+	-rm -f $(patsubst %,%_wrap.c %.py,joystick uinput)
 	-rm -f uinput-test
-	-rm -f uinput.py
-	-rm -f joystick.py
 	-rm -f *.pyc *.pyo
 
-test : docs
+test : docs uinput-test
 	sudo ./uinput-test
 	sudo ./pytest
+
