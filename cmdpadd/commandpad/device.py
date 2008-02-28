@@ -39,6 +39,9 @@ class DevEvent(object):
 	"""
 	A single event read from an event device.
 	"""
+	__FORMAT = "llHHl"
+	__LENGTH = struct.calcsize(__FORMAT)
+	
 	__sec = 0
 	__usec = 0
 	__type = 0
@@ -84,6 +87,10 @@ class DevEvent(object):
 	
 	def __repr__(self):
 		return "%s(%r, %r, %r, %r)" % (self.__class__.__name__, self.time, self.type, self.code, self.value)
+	
+	def pack(self):
+		"Puts back into binary form."
+		return struct.pack(self.__FORMAT, self.sec, self.usec, self.type, self.code, self.value)
 	
 class Device(object):
 	"""
