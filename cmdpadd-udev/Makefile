@@ -40,8 +40,6 @@ clean :
 	-rm -rf build
 	-rm -f $(CMODULES)
 	-rm -f $(DOCS)
-	-rm -f $(patsubst %,%_wrap.c %.py,joystick uinput)
-	-rm -f uinput-test
 	-rm -f *.pyc *.pyo
 
 test : docs uinput-test

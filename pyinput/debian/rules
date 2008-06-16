@@ -9,31 +9,26 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-CFLAGS = -Wall -g
+DESTDIR := $(CURDIR)/debian/pyinput
+PREFIX := $(DESTDIR)/usr
 
-ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-	CFLAGS += -O0
-else
-	CFLAGS += -O2
+BUILD_OPTS :=
+ifneq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+   BUILD_OPTS += --debug
 endif
 
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
-	# Add here commands to configure the package.
-
 	touch configure-stamp
-
 
 build: build-stamp
 
 build-stamp: configure-stamp 
 	dh_testdir
 
-	# Add here commands to compile the package.
-	$(MAKE)
-	docbook-to-man debian/cmdpadd.sgml > cmdpadd.1
-
+	./setup.py $(BUILD_OPTS) build
+	
 	touch $@
 
 clean:
@@ -41,8 +36,7 @@ clean:
 	dh_testroot
 	rm -f build-stamp configure-stamp
 
-	# Add here commands to clean up after the build process.
-	-$(MAKE) clean
+	-./setup.py clean --all
 
 	dh_clean 
 
@@ -52,9 +46,10 @@ install: build
 	dh_clean -k 
 	dh_installdirs
 
-	# Add here commands to install the package into debian/cmdpadd.
-	$(MAKE) DESTDIR=$(CURDIR)/debian/cmdpadd install
-
+	# Add here commands to install the package into debian/pyinput.
+	./setup.py install --no-compile \
+		--root=$(PREFIX) \
+		--install-lib=$(PREFIX)/share/python-support/python-package 
 
 # Build architecture-independent files here.
 binary-indep: build install
@@ -62,7 +57,7 @@ binary-indep: build install
 	dh_testroot
 	dh_installchangelogs 
 	dh_installdocs
-#	dh_installexamples
+	dh_installexamples
 #	dh_install
 #	dh_installmenu
 #	dh_installdebconf	
@@ -73,7 +68,6 @@ binary-indep: build install
 	dh_pysupport
 #	dh_pycentral
 #	dh_installinit
-	dh_installupstart
 #	dh_installcron
 #	dh_installinfo
 	dh_installman
@@ -91,7 +85,7 @@ binary-indep: build install
 
 # Build architecture-dependent files here.
 binary-arch: build install
-# Hurrah! Purepython!
+# We have nothing to do by default.
 
 binary: binary-indep binary-arch
 .PHONY: build clean binary-indep binary-arch binary install configure
