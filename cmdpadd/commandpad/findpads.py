@@ -24,7 +24,8 @@ def init():
 	bus = dbus.SystemBus()
 
 def testDevice(dev):
-	parent = bus.get_object(HAL_WKN, dev.GetProperty(HAL_PARENT))
+	parent = dbus.Interface(bus.get_object(HAL_WKN, dev.GetProperty(HAL_PARENT)),
+		'org.freedesktop.Hal.Device') 
 	try:
 		if parent.GetProperty(HAL_PRODUCT) != PAD_PRODUCT: return False
 		if parent.GetProperty(HAL_VENDOR) != PAD_VENDOR: return False
@@ -34,8 +35,10 @@ def testDevice(dev):
 		return True
 
 def getDeviceObjects():
-	man = bus.get_object(HAL_WKN, "/org/freedesktop/Hal/Manager")
-	for dev in map((lambda d: bus.get_object(HAL_WKN, d)), man.FindDeviceByCapability("input")):
+	man = dbus.Interface(bus.get_object(HAL_WKN, "/org/freedesktop/Hal/Manager"), 
+		'org.freedesktop.Hal.Manager')
+	for dev in (dbus.Interface(bus.get_object(HAL_WKN, d), 'org.freedesktop.Hal.Device') 
+	            for d in man.FindDeviceByCapability("input")):
 		if testDevice(dev): yield dev
 
 def getEventFiles():
