@@ -1,0 +1,17 @@
+build
+uinput-test
+uinput.html
+_uinput.html
+uinput.py
+_uinput.so
+uinput_wrap.c
+joystick.html
+_joystick.html
+joystick.py
+_joystick.so
+joystick_wrap.c
+*.pyc
+*.pyo
+devfilter.html
+udev.html
+

@@ -1,0 +1,5 @@
+cmdpadd
+*.debhelper
+*.substvars
+files
+
