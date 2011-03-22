@@ -1,0 +1,3 @@
+[submodule "pyinput"]
+	path = pyinput
+	url = git@github.com:astronouth7303/pyinput.git
