@@ -1,0 +1,11 @@
+This is a collection of libraries that provide macro functionality to game 
+inputs, making use of the input subsystem.
+
+cmdpadd and cmdpadd-client are a client-server pair that make use of the system
+D-Bus to communicate. This allows the server to run as root to read the button
+presses and the client to be in the desktop environment. Does not currently 
+respect the current window.
+
+cmdpadd-udev instead is a single program that reads button presses and puts out 
+button presses. For a working example, see pad-media (which maps it to media 
+player control).
